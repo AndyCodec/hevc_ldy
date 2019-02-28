@@ -162,6 +162,7 @@ struct Lowres : public ReferencePlanes
     bool create(PicYuv *origPic, int _bframes, bool bAqEnabled, uint32_t qgSize);
     void destroy();
     void init(PicYuv *origPic, int poc);
+    void getData();
 };
 }
 

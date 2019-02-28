@@ -246,6 +246,7 @@ public:
     void destroy();
 
     int encode(const x265_picture* pic, x265_picture *pic_out);
+    int encode_lookahead(const x265_picture* pic);
 
     int reconfigureParam(x265_param* encParam, x265_param* param);
 

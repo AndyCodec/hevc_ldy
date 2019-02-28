@@ -180,3 +180,29 @@ void Lowres::init(PicYuv *origPic, int poc)
     extendPicBorder(lowresPlane[3], lumaStride, width, lines, origPic->m_lumaMarginX, origPic->m_lumaMarginY);
     fpelPlane[0] = lowresPlane[0];
 }
+
+#define Name2String(name) (#name)
+void Lowres::getData() {
+    if (!isLowres)
+        return;
+    
+    printf("\n\n======================lowres data=========================");
+    printf("%s=%d\n", Name2String(frameNum), frameNum);
+    printf("%s=%d\n", Name2String(sliceType), sliceType);
+    printf("%s=%d\n", Name2String(width), width);
+    printf("%s=%d\n", Name2String(lines), lines);
+    printf("%s=%d\n", Name2String(leadingBframes), leadingBframes);
+    printf("%s=%d\n", Name2String(bScenecut), bScenecut);
+    printf("%s=%d\n", Name2String(bKeyframe), bKeyframe);
+    printf("%s=%d\n", Name2String(bLastMiniGopBFrame), bLastMiniGopBFrame);
+    printf("%s=%.3f\n", Name2String(ipCostRatio), ipCostRatio);
+    printf("%s=%d\n", Name2String(lowresMvs[0][1][0].x), lowresMvs[0][1][0].x);
+    printf("%s=%d\n", Name2String(lowresMvs[1][1][0].y), lowresMvs[1][1][0].y);
+    printf("%s=%d\n", Name2String(intraCost[10]), intraCost[10]);
+    printf("%s=%d\n", Name2String(intraMode[10]), intraMode[10]);
+    printf("%s=%d\n", Name2String(satdCost), satdCost);
+
+
+
+
+}

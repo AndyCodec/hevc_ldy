@@ -267,7 +267,8 @@ int x265_encoder_encode(x265_encoder *enc, x265_nal **pp_nal, uint32_t *pi_nal, 
     // While flushing, we cannot return 0 until the entire stream is flushed
     do
     {
-        numEncoded = encoder->encode(pic_in, pic_out);
+        //numEncoded = encoder->encode(pic_in, pic_out);
+        numEncoded = encoder->encode_lookahead(pic_in);
         static_count++;
         encoder_count++;
         printf("static_count, encoder_count, numEncoder = %d, %d, %d-\n", static_count, encoder_count, numEncoded);
@@ -377,7 +378,7 @@ int x265_encoder_ctu_info(x265_encoder *enc, int poc, x265_ctu_info_t** ctu)
     if (!ctu || !enc)
         return -1;
     Encoder* encoder = static_cast<Encoder*>(enc);
-    //encoder->copyCtuInfo(ctu, poc);
+    encoder->copyCtuInfo(ctu, poc);
     return 0;
 }
 

@@ -1185,17 +1185,6 @@ int Encoder::encode(const x265_picture* pic_in, x265_picture* pic_out)
     Frame* outFrame = NULL;
     Frame* frameEnc = NULL;
 
-    ////=======================lookahead==============================
-    //Frame* frameLookahead = m_lookahead->getDecidedPicture();
-    //if (frameLookahead)
-    //{
-    //    ret = 2;
-    //}
-    ////printf("encoder_encode: ret = %d-\n", ret);
-    //return ret;
-    ////=======================lookahead==============================
-
-    //{
     int pass = 0;
     do
     {
@@ -1398,6 +1387,12 @@ int Encoder::encode(const x265_picture* pic_in, x265_picture* pic_out)
         if (!pass)
             frameEnc = m_lookahead->getDecidedPicture(); //从lookahead的m_outputQueue中取帧：Frame *out = m_outputQueue.popFront();
             //frameEnc = m_qlookahead->getDecidedPicture(); //从lookahead的m_outputQueue中取帧：Frame *out = m_outputQueue.popFront();
+
+        if (frameEnc) //ldy add for get lowres data
+        {
+            frameEnc->m_lowres.getData();
+        }
+
         if (frameEnc && !pass)
         {
             if (m_param->analysisMultiPassRefine || m_param->analysisMultiPassDistortion)
@@ -1567,7 +1562,228 @@ int Encoder::encode(const x265_picture* pic_in, x265_picture* pic_out)
     while (m_bZeroLatency && ++pass < 2);
 
     return ret;
-    //}
+}
+
+
+int Encoder::encode_lookahead(const x265_picture* pic_in)
+{
+#if CHECKED_BUILD || _DEBUG
+    if (g_checkFailures)
+    {
+        x265_log(m_param, X265_LOG_ERROR, "encoder aborting because of internal error\n");
+        return -1;
+    }
+#endif
+    if (m_aborted)
+        return -1;
+
+    if (m_exportedPic)
+    {
+        if (!m_param->bUseAnalysisFile && m_param->analysisSave)
+            freeAnalysis(&m_exportedPic->m_analysisData);
+        ATOMIC_DEC(&m_exportedPic->m_countRefEncoders);
+        m_exportedPic = NULL;
+        m_dpb->recycleUnreferenced();
+    }
+    if (pic_in) //如果当前有读入帧 （有可能已经读完原始帧，但是lookachead buffer里面依然有待编码帧）
+    {
+        if (m_latestParam->forceFlush == 1)
+        {
+            m_lookahead->setLookaheadQueue();
+            m_latestParam->forceFlush = 0;
+        }
+        if (m_latestParam->forceFlush == 2)
+        {
+            m_lookahead->m_filled = false;
+            m_latestParam->forceFlush = 0;
+        }
+
+        x265_sei_payload toneMap;
+        toneMap.payload = NULL;
+#if ENABLE_HDR10_PLUS
+        if (m_bToneMap)
+        {
+            int currentPOC = m_pocLast + 1;
+            if (currentPOC < m_numCimInfo)
+            {
+                int32_t i = 0;
+                toneMap.payloadSize = 0;
+                while (m_cim[currentPOC][i] == 0xFF)
+                    toneMap.payloadSize += m_cim[currentPOC][i++];
+                toneMap.payloadSize += m_cim[currentPOC][i];
+
+                toneMap.payload = (uint8_t*)x265_malloc(sizeof(uint8_t) * toneMap.payloadSize);
+                toneMap.payloadType = USER_DATA_REGISTERED_ITU_T_T35;
+                memcpy(toneMap.payload, &m_cim[currentPOC][i + 1], toneMap.payloadSize);
+            }
+        }
+#endif
+
+        if (pic_in->bitDepth < 8 || pic_in->bitDepth > 16)//检错像素深度
+        {
+            x265_log(m_param, X265_LOG_ERROR, "Input bit depth (%d) must be between 8 and 16\n",
+                pic_in->bitDepth);
+            return -1;
+        }
+
+        Frame *inFrame;//即将create 用于存储视频帧
+        if (m_dpb->m_freeList.empty())
+        {
+            inFrame = new Frame;//申请空间
+            inFrame->m_encodeStartTime = x265_mdate();
+            x265_param* p = (m_reconfigure || m_reconfigureRc) ? m_latestParam : m_param;//选择新的配置文件
+            if (inFrame->create(p, pic_in->quantOffsets))//申请frame空间
+            {
+                static int count = 0;
+                printf("m_dpb->m_freeList.empty()--count = %d\n", count++);
+                /* the first PicYuv created is asked to generate the CU and block unit offset
+                * arrays which are then shared with all subsequent PicYuv (orig and recon)
+                * allocated by this top level encoder */
+                if (m_sps.cuOffsetY)//已经申请过空间，不用再进入else 将encoder offset指针赋值到对应m_fencPic对象中
+                {
+                    inFrame->m_fencPic->m_cuOffsetY = m_sps.cuOffsetY;
+                    inFrame->m_fencPic->m_buOffsetY = m_sps.buOffsetY;
+                    if (m_param->internalCsp != X265_CSP_I400)
+                    {
+                        inFrame->m_fencPic->m_cuOffsetC = m_sps.cuOffsetC;
+                        inFrame->m_fencPic->m_buOffsetC = m_sps.buOffsetC;
+                    }
+                }
+                else
+                {
+                    if (!inFrame->m_fencPic->createOffsets(m_sps))//申请偏移计算空间，一般不进入
+                    {
+                        m_aborted = true;
+                        x265_log(m_param, X265_LOG_ERROR, "memory allocation failure, aborting encode\n");
+                        inFrame->destroy();
+                        delete inFrame;
+                        return -1;
+                    }
+                    else
+                    {
+                        //申请内存正常 会进出入此：将encoder offset值置为对应m_fencPic对象中的指针值
+                        m_sps.cuOffsetY = inFrame->m_fencPic->m_cuOffsetY;
+                        m_sps.buOffsetY = inFrame->m_fencPic->m_buOffsetY;
+                        if (m_param->internalCsp != X265_CSP_I400)
+                        {
+                            m_sps.cuOffsetC = inFrame->m_fencPic->m_cuOffsetC;//空间为一帧LCU个数，按照行列对应色度LCU的pixel地址
+                            m_sps.cuOffsetY = inFrame->m_fencPic->m_cuOffsetY;//空间为一帧LCU个数，按照行列对应亮度LCU的pixel地址
+                            m_sps.buOffsetC = inFrame->m_fencPic->m_buOffsetC;//空间为一个LCU的part个数（默认256个4x4），为当前色度位置与LCU首地址的偏移地址
+                            m_sps.buOffsetY = inFrame->m_fencPic->m_buOffsetY;//空间为一个LCU的part个数（默认256个4x4），为当前亮度位置与LCU首地址的偏移地址
+                        }
+                    }
+                }
+            }
+            else//报错信息，正常不会进入
+            {
+                m_aborted = true;
+                x265_log(m_param, X265_LOG_ERROR, "memory allocation failure, aborting encode\n");
+                inFrame->destroy();
+                delete inFrame;
+                return -1;
+            }
+        }
+        else
+        {
+            inFrame = m_dpb->m_freeList.popBack();//直接从m_freeList中获取空间
+            inFrame->m_encodeStartTime = x265_mdate();
+            /* Set lowres scencut and satdCost here to aovid overwriting ANALYSIS_READ
+            decision by lowres init*/
+            inFrame->m_lowres.bScenecut = false;
+            inFrame->m_lowres.satdCost = (int64_t)-1;
+            inFrame->m_lowresInit = false;//标示未初始化
+        }
+
+        /* Copy input picture into a Frame and PicYuv, send to lookahead */
+        inFrame->m_fencPic->copyFromPicture(*pic_in, *m_param, m_sps.conformanceWindow.rightOffset, m_sps.conformanceWindow.bottomOffset);
+
+        inFrame->m_poc = ++m_pocLast;
+        inFrame->m_userData = pic_in->userData;
+        inFrame->m_pts = pic_in->pts;
+        inFrame->m_forceqp = pic_in->forceqp;
+        inFrame->m_param = (m_reconfigure || m_reconfigureRc) ? m_latestParam : m_param;
+
+        int toneMapEnable = 0;
+        if (m_bToneMap && toneMap.payload)
+            toneMapEnable = 1;
+        int numPayloads = pic_in->userSEI.numPayloads + toneMapEnable;
+        inFrame->m_userSEI.numPayloads = numPayloads;
+
+        if (inFrame->m_userSEI.numPayloads)
+        {
+            if (!inFrame->m_userSEI.payloads)
+            {
+                inFrame->m_userSEI.payloads = new x265_sei_payload[numPayloads];
+                for (int i = 0; i < numPayloads; i++)
+                    inFrame->m_userSEI.payloads[i].payload = NULL;
+            }
+            for (int i = 0; i < numPayloads; i++)
+            {
+                x265_sei_payload input;
+                if ((i == (numPayloads - 1)) && toneMapEnable)
+                    input = toneMap;
+                else
+                    input = pic_in->userSEI.payloads[i];
+                int size = inFrame->m_userSEI.payloads[i].payloadSize = input.payloadSize;
+                inFrame->m_userSEI.payloads[i].payloadType = input.payloadType;
+                if (!inFrame->m_userSEI.payloads[i].payload)
+                    inFrame->m_userSEI.payloads[i].payload = new uint8_t[size];
+                memcpy(inFrame->m_userSEI.payloads[i].payload, input.payload, size);
+            }
+            if (toneMap.payload)
+                x265_free(toneMap.payload);
+        }
+
+        if (pic_in->quantOffsets != NULL)
+        {
+            int cuCount;
+            if (m_param->rc.qgSize == 8)
+                cuCount = inFrame->m_lowres.maxBlocksInRowFullRes * inFrame->m_lowres.maxBlocksInColFullRes;
+            else
+                cuCount = inFrame->m_lowres.maxBlocksInRow * inFrame->m_lowres.maxBlocksInCol;
+            memcpy(inFrame->m_quantOffsets, pic_in->quantOffsets, cuCount * sizeof(float));
+        }
+
+        if (m_pocLast == 0)
+            m_firstPts = inFrame->m_pts;
+        if (m_bframeDelay && m_pocLast == m_bframeDelay)
+            m_bframeDelayTime = inFrame->m_pts - m_firstPts;
+
+        /* Encoder holds a reference count until stats collection is finished */
+        ATOMIC_INC(&inFrame->m_countRefEncoders);
+
+        if ((m_param->rc.aqMode || m_param->bEnableWeightedPred || m_param->bEnableWeightedBiPred) &&
+            (m_param->rc.cuTree && m_param->rc.bStatRead))
+        {
+            if (!m_rateControl->cuTreeReadFor2Pass(inFrame))
+            {
+                m_aborted = 1;
+                return -1;
+            }
+        }
+
+        /* Use the frame types from the first pass, if available */
+        int sliceType = (m_param->rc.bStatRead) ? m_rateControl->rateControlSliceType(inFrame->m_poc) : pic_in->sliceType;
+        m_lookahead->addPicture(*inFrame, sliceType);//将inFrame放入m_inputQueue中，满足条件时会唤醒工作线程
+
+        m_numDelayedPic++;
+    }
+    else if (m_latestParam->forceFlush == 2) {
+        m_lookahead->m_filled = true;
+    }
+    else {
+        m_lookahead->flush();
+    }
+
+    int ret = 0;
+    Frame* frameLookahead = m_lookahead->getDecidedPicture();
+    if (frameLookahead)
+    {
+        //frameLookahead->m_lowres.getData();
+        ret = 2;
+    }
+    //printf("encoder_encode: ret = %d-\n", ret);
+    return ret;
 }
 
 int Encoder::reconfigureParam(x265_param* encParam, x265_param* param)
