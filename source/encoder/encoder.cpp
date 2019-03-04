@@ -1761,7 +1761,7 @@ int Encoder::encode_lookahead(const x265_picture* pic_in)
     Frame* frameLookahead = m_lookahead->getDecidedPicture();
     if (frameLookahead)
     {
-        //frameLookahead->m_lowres.getData();
+        frameLookahead->m_lowres.getData();
         ret = 2;
     }
     //printf("encoder_encode: ret = %d-\n", ret);
