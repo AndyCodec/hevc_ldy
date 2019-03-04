@@ -164,7 +164,7 @@ public:
     uint32_t           m_numDelayedPic;
 
     ThreadPool*        m_threadPool;
-    FrameEncoder*      m_frameEncoder[X265_MAX_FRAME_THREADS];
+    //FrameEncoder*      m_frameEncoder[X265_MAX_FRAME_THREADS];
     DPB*               m_dpb;
     Frame*             m_exportedPic;
     FILE*              m_analysisFileIn;
@@ -243,7 +243,7 @@ public:
     void stopJobs();
     void destroy();
 
-    int encode(const x265_picture* pic, x265_picture *pic_out);
+    //int encode(const x265_picture* pic, x265_picture *pic_out);
     int encode_lookahead(const x265_picture* pic);
 
     int reconfigureParam(x265_param* encParam, x265_param* param);

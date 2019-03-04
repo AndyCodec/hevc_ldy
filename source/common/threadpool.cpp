@@ -536,8 +536,8 @@ void ThreadPool::stopWorkers()
         m_isActive = false;
         for (int i = 0; i < m_numWorkers; i++)
         {
-            while (!(m_sleepBitmap & ((sleepbitmap_t)1 << i)))
-                GIVE_UP_TIME();
+            //while (!(m_sleepBitmap & ((sleepbitmap_t)1 << i)))
+            //    GIVE_UP_TIME();
             m_workers[i].awaken();
             m_workers[i].stop();
         }
