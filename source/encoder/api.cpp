@@ -271,7 +271,7 @@ int x265_encoder_encode(x265_encoder *enc, x265_nal **pp_nal, uint32_t *pi_nal, 
         numEncoded = encoder->encode_lookahead(pic_in);
         static_count++;
         encoder_count++;
-        printf("static_count, encoder_count, numEncoder = %d, %d, %d-\n", static_count, encoder_count, numEncoded);
+        //printf("static_count, encoder_count, numEncoder = %d, %d, %d-\n", static_count, encoder_count, numEncoded);
         if (encoder_count > 1)
             break;
 

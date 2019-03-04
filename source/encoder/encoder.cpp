@@ -70,7 +70,6 @@ Encoder::Encoder()
     m_numLumaWPBiFrames = 0;
     m_numChromaWPBiFrames = 0;
     m_lookahead = NULL;
-    m_qlookahead = NULL;
     m_rateControl = NULL;
     m_dpb = NULL;
     m_exportedPic = NULL;
@@ -231,7 +230,6 @@ void Encoder::create()
     else
         lookAheadThreadPool = m_threadPool;
     m_lookahead = new Lookahead(m_param, lookAheadThreadPool);//初始化lookachead用于帧类型决策
-    //m_qlookahead = new QLookahead(m_param);//初始化lookachead用于帧类型决策
     if (pools)
     {
         m_lookahead->m_jpId = lookAheadThreadPool[0].m_numProviders++;
@@ -347,9 +345,6 @@ void Encoder::create()
         m_aborted = true;
     if (!m_lookahead->create())//申请lookachead空间用于帧类型决策
         m_aborted = true;
-
-    //if (!m_qlookahead->create())//申请lookachead空间用于帧类型决策
-    //    m_aborted = true;
 
     initRefIdx();
     if (m_param->analysisSave && m_param->bUseAnalysisFile)
@@ -750,12 +745,6 @@ void Encoder::destroy()
         delete m_lookahead;
     }
 
-    //if (m_qlookahead)//ldy
-    //{
-    //    m_qlookahead->destroy();
-    //    delete m_qlookahead;
-    //}
-
     delete m_dpb;
     if (m_rateControl)
     {
@@ -907,12 +896,10 @@ int Encoder::encode(const x265_picture* pic_in, x265_picture* pic_out)
         {
             m_lookahead->setLookaheadQueue();
             m_latestParam->forceFlush = 0;
-            //m_qlookahead->setLookaheadQueue();
         }
         if (m_latestParam->forceFlush == 2)
         {
             m_lookahead->m_filled = false;
-            //m_qlookahead->m_filled = false;
             m_latestParam->forceFlush = 0;
         }
 
@@ -1161,17 +1148,14 @@ int Encoder::encode(const x265_picture* pic_in, x265_picture* pic_out)
             inFrame->m_reconfigureRc = true;
 
         m_lookahead->addPicture(*inFrame, sliceType);//将inFrame放入m_inputQueue中，满足条件时会唤醒工作线程
-        //m_qlookahead->addPicture(*inFrame, sliceType);//ldy
 
         m_numDelayedPic++;
     }
     else if (m_latestParam->forceFlush == 2) {
         m_lookahead->m_filled = true;
-        //m_qlookahead->m_filled = true;
     }
     else {
         m_lookahead->flush();
-        //m_qlookahead->flush();
     }
 
     FrameEncoder *curEncoder = m_frameEncoder[m_curEncoder];//选择编码器，可根据CPU个数自动选择启动几个编码器，多个编码器轮流工作
@@ -1386,7 +1370,6 @@ int Encoder::encode(const x265_picture* pic_in, x265_picture* pic_out)
          * curEncoder is guaranteed to be idle at this point */
         if (!pass)
             frameEnc = m_lookahead->getDecidedPicture(); //从lookahead的m_outputQueue中取帧：Frame *out = m_outputQueue.popFront();
-            //frameEnc = m_qlookahead->getDecidedPicture(); //从lookahead的m_outputQueue中取帧：Frame *out = m_outputQueue.popFront();
 
         if (frameEnc) //ldy add for get lowres data
         {
@@ -1547,7 +1530,6 @@ int Encoder::encode(const x265_picture* pic_in, x265_picture* pic_out)
             m_dpb->prepareEncode(frameEnc);//确定参考帧，设置RPS等
 
             if (m_param->rc.rateControlMode != X265_RC_CQP)
-                //m_qlookahead->getEstimatedPictureCost(frameEnc);//码流控制：计算satd cost
                 m_lookahead->getEstimatedPictureCost(frameEnc);//码流控制：计算satd cost
             if (m_param->bIntraRefresh)
                  calcRefreshInterval(frameEnc);
@@ -1857,17 +1839,13 @@ void Encoder::copyCtuInfo(x265_ctu_info_t** frameCtuInfo, int poc)
     do
     {
         curFrame = m_lookahead->m_inputQueue.getPOC(poc);
-        //curFrame = m_qlookahead->m_inputQueue.getPOC(poc);
         if (!curFrame)
-            //curFrame = m_qlookahead->m_outputQueue.getPOC(poc);
             curFrame = m_lookahead->m_outputQueue.getPOC(poc);
 
         if (poc > 0)
         {
-            //prevFrame = m_qlookahead->m_inputQueue.getPOC(poc - 1);
             prevFrame = m_lookahead->m_inputQueue.getPOC(poc - 1);
             if (!prevFrame)
-                //prevFrame = m_qlookahead->m_outputQueue.getPOC(poc - 1);
                 prevFrame = m_lookahead->m_outputQueue.getPOC(poc - 1);
             if (!prevFrame)
             {
@@ -2036,14 +2014,12 @@ void Encoder::printSummary()
     }
     int pWithB = 0;
     for (int i = 0; i <= m_param->bframes; i++)
-        //pWithB += m_qlookahead->m_histogram[i];
         pWithB += m_lookahead->m_histogram[i];
 
     if (pWithB)
     {
         int p = 0;
         for (int i = 0; i <= m_param->bframes; i++)
-            //p += sprintf(buffer + p, "%.1f%% ", 100. * m_qlookahead->m_histogram[i] / pWithB);
             p += sprintf(buffer + p, "%.1f%% ", 100. * m_lookahead->m_histogram[i] / pWithB);
 
         x265_log(m_param, X265_LOG_INFO, "consecutive B-frames: %s\n", buffer);

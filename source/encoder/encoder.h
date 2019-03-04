@@ -130,7 +130,6 @@ struct puOrientation
 class FrameEncoder;
 class DPB;
 class Lookahead;
-class QLookahead;//ldy
 class RateControl;
 class ThreadPool;
 class FrameData;
@@ -174,7 +173,6 @@ public:
     x265_param*        m_latestParam;     // Holds latest param during a reconfigure
     RateControl*       m_rateControl;
     Lookahead*         m_lookahead;
-    QLookahead*        m_qlookahead;//ldy
 
     bool               m_externalFlush;
     /* Collect statistics globally */
