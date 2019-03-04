@@ -210,10 +210,9 @@ void Lowres::getData() {
     s += sprintf(s, " wp_sum[1]=%lld",             wp_sum[1]);
     s += sprintf(s, " wp_sum[2]=%lld\n",           wp_sum[2]);
 
-    //printf("%s", buf);
-
-    FILE *dataOut = fopen("D://myX265//x265_result//lookaheadData//lowresData.log", "at+");
-    fprintf(dataOut, "%s", buf);
-    fclose(dataOut);
+    printf("%s", buf);
+    //FILE *dataOut = fopen("D://myX265//x265_result//lookaheadData//lowresData.log", "at+");
+    //fprintf(dataOut, "%s", buf);
+    //fclose(dataOut);
     free(buf);
 }
