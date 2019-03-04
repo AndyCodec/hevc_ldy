@@ -127,7 +127,6 @@ struct puOrientation
 };
 
 
-class FrameEncoder;
 class DPB;
 class Lookahead;
 class RateControl;
@@ -164,7 +163,6 @@ public:
     uint32_t           m_numDelayedPic;
 
     ThreadPool*        m_threadPool;
-    //FrameEncoder*      m_frameEncoder[X265_MAX_FRAME_THREADS];
     DPB*               m_dpb;
     Frame*             m_exportedPic;
     FILE*              m_analysisFileIn;
@@ -293,7 +291,6 @@ public:
     void writeAnalysisFile(x265_analysis_data* pic, FrameData &curEncData);
     void readAnalysis2PassFile(x265_analysis_2Pass* analysis2Pass, int poc, int sliceType);
     void writeAnalysis2PassFile(x265_analysis_2Pass* analysis2Pass, FrameData &curEncData, int slicetype);
-    void finishFrameStats(Frame* pic, FrameEncoder *curEncoder, x265_frame_stats* frameStats, int inPoc);
 
     int validateAnalysisData(x265_analysis_data* analysis, int readWriteFlag);
 
