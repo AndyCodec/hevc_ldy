@@ -181,28 +181,39 @@ void Lowres::init(PicYuv *origPic, int poc)
     fpelPlane[0] = lowresPlane[0];
 }
 
-#define Name2String(name) (#name)
 void Lowres::getData() {
     if (!isLowres)
         return;
-    
-    printf("\n\n======================lowres data=========================");
-    printf("%s=%d\n", Name2String(frameNum), frameNum);
-    printf("%s=%d\n", Name2String(sliceType), sliceType);
-    printf("%s=%d\n", Name2String(width), width);
-    printf("%s=%d\n", Name2String(lines), lines);
-    printf("%s=%d\n", Name2String(leadingBframes), leadingBframes);
-    printf("%s=%d\n", Name2String(bScenecut), bScenecut);
-    printf("%s=%d\n", Name2String(bKeyframe), bKeyframe);
-    printf("%s=%d\n", Name2String(bLastMiniGopBFrame), bLastMiniGopBFrame);
-    printf("%s=%.3f\n", Name2String(ipCostRatio), ipCostRatio);
-    printf("%s=%d\n", Name2String(lowresMvs[0][1][0].x), lowresMvs[0][1][0].x);
-    printf("%s=%d\n", Name2String(lowresMvs[1][1][0].y), lowresMvs[1][1][0].y);
-    printf("%s=%d\n", Name2String(intraCost[10]), intraCost[10]);
-    printf("%s=%d\n", Name2String(intraMode[10]), intraMode[10]);
-    printf("%s=%d\n", Name2String(satdCost), satdCost);
 
+    char *buf, *s;
+    buf = (char *)malloc(8000 * sizeof(char));
+    s = buf;
+    s += sprintf(s, "frameNum=%d",                 frameNum);
+    s += sprintf(s, " isWeighted=%d",              isWeighted);
+    s += sprintf(s, " sliceType=%d",               sliceType);
+    s += sprintf(s, " width=%d",                   width);
+    s += sprintf(s, " lines=%d",                   lines);
+    s += sprintf(s, " leadingBframes=%d",          leadingBframes);
+    s += sprintf(s, " bScenecut=%d",               bScenecut);
+    s += sprintf(s, " bKeyframe=%d",               bKeyframe);
+    s += sprintf(s, " bLastMiniGopBFrame=%d",      bLastMiniGopBFrame);
+    s += sprintf(s, " indB=%d",                    indB);
+    s += sprintf(s, " bframes=%d",                 bframes);
+    s += sprintf(s, " maxBlocksInRow=%d",          maxBlocksInRow);
+    s += sprintf(s, " maxBlocksInCol=%d",          maxBlocksInCol);
+    s += sprintf(s, " maxBlocksInRowFullRes=%d",   maxBlocksInRowFullRes);
+    s += sprintf(s, " maxBlocksInColFullRes=%d",   maxBlocksInColFullRes);
+    s += sprintf(s, " wp_ssd[0]=%lld",             wp_ssd[0]);
+    s += sprintf(s, " wp_ssd[1]=%lld",             wp_ssd[1]);
+    s += sprintf(s, " wp_ssd[2]=%lld",             wp_ssd[2]);
+    s += sprintf(s, " wp_sum[0]=%lld",             wp_sum[0]);
+    s += sprintf(s, " wp_sum[1]=%lld",             wp_sum[1]);
+    s += sprintf(s, " wp_sum[2]=%lld\n",           wp_sum[2]);
 
+    //printf("%s", buf);
 
-
+    FILE *dataOut = fopen("D://myX265//x265_result//lookaheadData//lowresData.log", "at+");
+    fprintf(dataOut, "%s", buf);
+    fclose(dataOut);
+    free(buf);
 }
