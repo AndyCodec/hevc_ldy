@@ -237,60 +237,6 @@ public:
 #endif
     };
 
-    void create();
-    void stopJobs();
-    void destroy();
-
-    int encode_lookahead(const x265_picture* pic);
-
-    int reconfigureParam(x265_param* encParam, x265_param* param);
-
-    bool isReconfigureRc(x265_param* latestParam, x265_param* param_in);
-
-    void copyCtuInfo(x265_ctu_info_t** frameCtuInfo, int poc);
-
-    int copySlicetypePocAndSceneCut(int *slicetype, int *poc, int *sceneCut);
-
-    int getRefFrameList(PicYuv** l0, PicYuv** l1, int sliceType, int poc, int* pocL0, int* pocL1);
-
-    int setAnalysisDataAfterZScan(x265_analysis_data *analysis_data, Frame* curFrame);
-
-    int setAnalysisData(x265_analysis_data *analysis_data, int poc, uint32_t cuBytes);
-
-    void getStreamHeaders(NALList& list, Entropy& sbacCoder, Bitstream& bs);
-
-    void fetchStats(x265_stats* stats, size_t statsSizeBytes);
-
-    void printSummary();
-
-    void printReconfigureParams();
-
-    char* statsString(EncStats&, char*);
-
-    void configure(x265_param *param);
-
-    void updateVbvPlan(RateControl* rc);
-
-    void allocAnalysis(x265_analysis_data* analysis);
-
-    void freeAnalysis(x265_analysis_data* analysis);
-
-    void freeAnalysis2Pass(x265_analysis_2Pass* analysis, int sliceType);
-
-    int getCUIndex(cuLocation* cuLoc, uint32_t* count, int bytes, int flag);
-
-    int getPuShape(puOrientation* puOrient, int partSize, int numCTU);
-
-    void initRefIdx();
-    void analyseRefIdx(int *numRefIdx);
-    void updateRefIdx();
-    bool computeSPSRPSIndex();
-
-protected:
-
-    void initVPS(VPS *vps);
-    void initSPS(SPS *sps);
-    void initPPS(PPS *pps);
 };
 
 class LookEncoder : public x265_encoder
@@ -404,16 +350,11 @@ public:
     //int encode(const x265_picture* pic, x265_picture *pic_out);
     int encode_lookahead(const x265_picture* pic);
 
-    void fetchStats(x265_stats* stats, size_t statsSizeBytes);
-
     void printSummary();
 
     void configure(x265_param *param);
     char* statsString(EncStats& stat, char* buffer);
     void initRefIdx();
-    bool computeSPSRPSIndex();
-    void getStreamHeaders(NALList& list, Entropy& sbacCoder, Bitstream& bs);
-    void freeAnalysis(x265_analysis_data* analysis);
 
 protected:
 

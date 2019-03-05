@@ -154,117 +154,20 @@ fail:
     return NULL;
 }
 
-int x265_encoder_headers(x265_encoder *enc, x265_nal **pp_nal, uint32_t *pi_nal)
-{
-    if (pp_nal && enc)
-    {
-        //Encoder *encoder = static_cast<Encoder*>(enc);
-        LookEncoder *encoder = static_cast<LookEncoder*>(enc);
-        Entropy sbacCoder;
-        Bitstream bs;
-        if (encoder->m_param->rc.bStatRead && encoder->m_param->bMultiPassOptRPS)
-        {
-            if (!encoder->computeSPSRPSIndex())
-            {
-                encoder->m_aborted = true;
-                return -1;
-            }
-        }
-        encoder->getStreamHeaders(encoder->m_nalList, sbacCoder, bs);
-        *pp_nal = &encoder->m_nalList.m_nal[0];
-        if (pi_nal) *pi_nal = encoder->m_nalList.m_numNal;
-        return encoder->m_nalList.m_occupancy;
-    }
-
-    if (enc)
-    {
-        Encoder *encoder = static_cast<Encoder*>(enc);
-        encoder->m_aborted = true;
-    }
-    return -1;
-}
-
 void x265_encoder_parameters(x265_encoder *enc, x265_param *out)
 {
     if (enc && out)
     {
-        //Encoder *encoder = static_cast<Encoder*>(enc);
         LookEncoder *encoder = static_cast<LookEncoder*>(enc);
         memcpy(out, encoder->m_param, sizeof(x265_param));
     }
 }
 
-int x265_encoder_reconfig(x265_encoder* enc, x265_param* param_in)
-{
-    //if (!enc || !param_in)
-    //    return -1;
-    //x265_param save;
-    //Encoder* encoder = static_cast<Encoder*>(enc);
-    //if (encoder->m_param->csvfn == NULL && param_in->csvfpt != NULL)
-    //     encoder->m_param->csvfpt = param_in->csvfpt;
-    //if (encoder->m_latestParam->forceFlush != param_in->forceFlush)
-    //    return encoder->reconfigureParam(encoder->m_latestParam, param_in);
-    //bool isReconfigureRc = encoder->isReconfigureRc(encoder->m_latestParam, param_in);
-    //if ((encoder->m_reconfigure && !isReconfigureRc) || (encoder->m_reconfigureRc && isReconfigureRc)) /* Reconfigure in progress */
-    //    return 1;
-    //memcpy(&save, encoder->m_latestParam, sizeof(x265_param));
-    //int ret = encoder->reconfigureParam(encoder->m_latestParam, param_in);
-    //if (ret)
-    //{
-    //    /* reconfigure failed, recover saved param set */
-    //    memcpy(encoder->m_latestParam, &save, sizeof(x265_param));
-    //    ret = -1;
-    //}
-    //else
-    //{
-    //    if (encoder->m_latestParam->scalingLists && encoder->m_latestParam->scalingLists != encoder->m_param->scalingLists)
-    //    {
-    //        if (encoder->m_param->bRepeatHeaders)
-    //        {
-    //            if (encoder->m_scalingList.parseScalingList(encoder->m_latestParam->scalingLists))
-    //            {
-    //                memcpy(encoder->m_latestParam, &save, sizeof(x265_param));
-    //                return -1;
-    //            }
-    //            encoder->m_scalingList.setupQuantMatrices(encoder->m_param->internalCsp);
-    //        }
-    //        else
-    //        {
-    //            x265_log(encoder->m_param, X265_LOG_ERROR, "Repeat headers is turned OFF, cannot reconfigure scalinglists\n");
-    //            memcpy(encoder->m_latestParam, &save, sizeof(x265_param));
-    //            return -1;
-    //        }
-    //    }
-    //    if (!isReconfigureRc)
-    //        encoder->m_reconfigure = true;
-    //    else if (encoder->m_reconfigureRc)
-    //    {
-    //        VPS saveVPS;
-    //        memcpy(&saveVPS.ptl, &encoder->m_vps.ptl, sizeof(saveVPS.ptl));
-    //        determineLevel(*encoder->m_latestParam, encoder->m_vps);
-    //        if (saveVPS.ptl.profileIdc != encoder->m_vps.ptl.profileIdc || saveVPS.ptl.levelIdc != encoder->m_vps.ptl.levelIdc
-    //            || saveVPS.ptl.tierFlag != encoder->m_vps.ptl.tierFlag)
-    //        {
-    //            x265_log(encoder->m_param, X265_LOG_WARNING, "Profile/Level/Tier has changed from %d/%d/%s to %d/%d/%s.Cannot reconfigure rate-control.\n",
-    //                     saveVPS.ptl.profileIdc, saveVPS.ptl.levelIdc, saveVPS.ptl.tierFlag ? "High" : "Main", encoder->m_vps.ptl.profileIdc,
-    //                     encoder->m_vps.ptl.levelIdc, encoder->m_vps.ptl.tierFlag ? "High" : "Main");
-    //            memcpy(encoder->m_latestParam, &save, sizeof(x265_param));
-    //            memcpy(&encoder->m_vps.ptl, &saveVPS.ptl, sizeof(saveVPS.ptl));
-    //            encoder->m_reconfigureRc = false;
-    //        }
-    //    }
-    //    encoder->printReconfigureParams();
-    //}
-    //return ret;
-    return 0;
-}
-
-int x265_encoder_encode(x265_encoder *enc, x265_nal **pp_nal, uint32_t *pi_nal, x265_picture *pic_in, x265_picture *pic_out)
+int x265_encoder_encode(x265_encoder *enc, x265_picture *pic_in)
 {
     if (!enc)
         return -1;
 
-    //Encoder *encoder = static_cast<Encoder*>(enc);
     LookEncoder *encoder = static_cast<LookEncoder*>(enc);
     int numEncoded;
 
@@ -273,7 +176,6 @@ int x265_encoder_encode(x265_encoder *enc, x265_nal **pp_nal, uint32_t *pi_nal, 
     // While flushing, we cannot return 0 until the entire stream is flushed
     do
     {
-        //numEncoded = encoder->encode(pic_in, pic_out);
         numEncoded = encoder->encode_lookahead(pic_in);
         static_count++;
         encoder_count++;
@@ -297,71 +199,17 @@ int x265_encoder_encode(x265_encoder *enc, x265_nal **pp_nal, uint32_t *pi_nal, 
         pic_in->analysis2Pass.analysisFramedata = NULL;
     }
 
-    if (pp_nal && numEncoded > 0)
-    {
-        *pp_nal = &encoder->m_nalList.m_nal[0];
-        if (pi_nal) *pi_nal = encoder->m_nalList.m_numNal;
-    }
-    else if (pi_nal)
-        *pi_nal = 0;
-
-    if (numEncoded && encoder->m_param->csvLogLevel)
-        x265_csvlog_frame(encoder->m_param, pic_out);
-
     if (numEncoded < 0)
         encoder->m_aborted = true;
 
     return numEncoded;
 }
 
-void x265_encoder_get_stats(x265_encoder *enc, x265_stats *outputStats, uint32_t statsSizeBytes)
-{
-    if (enc && outputStats)
-    {
-        Encoder *encoder = static_cast<Encoder*>(enc);
-        encoder->fetchStats(outputStats, statsSizeBytes);
-    }
-}
-#if ENABLE_LIBVMAF
-void x265_vmaf_encoder_log(x265_encoder* enc, int argc, char **argv, x265_param *param, x265_vmaf_data *vmafdata)
-{
-    if (enc)
-    {
-        Encoder *encoder = static_cast<Encoder*>(enc);
-        x265_stats stats;       
-        stats.aggregateVmafScore = x265_calculate_vmafscore(param, vmafdata);
-        if(vmafdata->reference_file)
-            fclose(vmafdata->reference_file);
-        if(vmafdata->distorted_file)
-            fclose(vmafdata->distorted_file);
-        if(vmafdata)
-            x265_free(vmafdata);
-        encoder->fetchStats(&stats, sizeof(stats));
-        int padx = encoder->m_sps.conformanceWindow.rightOffset;
-        int pady = encoder->m_sps.conformanceWindow.bottomOffset;
-        x265_csvlog_encode(encoder->m_param, &stats, padx, pady, argc, argv);
-    }
-}
-#endif
-
-void x265_encoder_log(x265_encoder* enc, int argc, char **argv)
-{
-    if (enc)
-    {
-        Encoder *encoder = static_cast<Encoder*>(enc);
-        x265_stats stats;       
-        encoder->fetchStats(&stats, sizeof(stats));
-        int padx = encoder->m_sps.conformanceWindow.rightOffset;
-        int pady = encoder->m_sps.conformanceWindow.bottomOffset;
-        x265_csvlog_encode(encoder->m_param, &stats, padx, pady, argc, argv);
-    }
-}
-
 void x265_encoder_close(x265_encoder *enc)
 {
     if (enc)
     {
-        Encoder *encoder = static_cast<Encoder*>(enc);
+        LookEncoder *encoder = static_cast<LookEncoder*>(enc);
 
         encoder->stopJobs();
         encoder->printSummary();
@@ -378,45 +226,6 @@ int x265_encoder_intra_refresh(x265_encoder *enc)
     Encoder *encoder = static_cast<Encoder*>(enc);
     encoder->m_bQueuedIntraRefresh = 1;
     return 0;
-}
-int x265_encoder_ctu_info(x265_encoder *enc, int poc, x265_ctu_info_t** ctu)
-{
-    if (!ctu || !enc)
-        return -1;
-    Encoder* encoder = static_cast<Encoder*>(enc);
-    encoder->copyCtuInfo(ctu, poc);
-    return 0;
-}
-
-int x265_get_slicetype_poc_and_scenecut(x265_encoder *enc, int *slicetype, int *poc, int *sceneCut)
-{
-    if (!enc)
-        return -1;
-    Encoder *encoder = static_cast<Encoder*>(enc);
-    if (!encoder->copySlicetypePocAndSceneCut(slicetype, poc, sceneCut))
-        return 0;
-    return -1;
-}
-
-int x265_get_ref_frame_list(x265_encoder *enc, x265_picyuv** l0, x265_picyuv** l1, int sliceType, int poc, int* pocL0, int* pocL1)
-{
-    if (!enc)
-        return -1;
-
-    Encoder *encoder = static_cast<Encoder*>(enc);
-    return encoder->getRefFrameList((PicYuv**)l0, (PicYuv**)l1, sliceType, poc, pocL0, pocL1);
-}
-
-int x265_set_analysis_data(x265_encoder *enc, x265_analysis_data *analysis_data, int poc, uint32_t cuBytes)
-{
-    if (!enc)
-        return -1;
-
-    Encoder *encoder = static_cast<Encoder*>(enc);
-    if (!encoder->setAnalysisData(analysis_data, poc, cuBytes))
-        return 0;
-
-    return -1;
 }
 
 void x265_cleanup(void)
@@ -481,28 +290,19 @@ static const x265_api libapi =
     &x265_picture_init,
     &x265_encoder_open,
     &x265_encoder_parameters,
-    &x265_encoder_reconfig,
-    &x265_encoder_headers,
     &x265_encoder_encode,
-    &x265_encoder_get_stats,
-    &x265_encoder_log,
     &x265_encoder_close,
     &x265_cleanup,
 
     sizeof(x265_frame_stats),
     &x265_encoder_intra_refresh,
-    &x265_encoder_ctu_info,
-    &x265_get_slicetype_poc_and_scenecut,
-    &x265_get_ref_frame_list,
     &x265_csvlog_open,
     &x265_csvlog_frame,
     &x265_csvlog_encode,
     &x265_dither_image,
-    &x265_set_analysis_data,
 #if ENABLE_LIBVMAF
     &x265_calculate_vmafscore,
     &x265_calculate_vmaf_framelevelscore,
-    &x265_vmaf_encoder_log
 #endif
 
 };

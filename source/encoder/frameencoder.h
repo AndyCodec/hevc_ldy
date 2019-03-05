@@ -217,9 +217,6 @@ protected:
 
     bool initializeGeoms();
 
-    /* analyze / compress frame, can be run in parallel within reference constraints */
-    void compressFrame();
-
     /* called by compressFrame to generate final per-row bitstreams */
     void encodeSlice(uint32_t sliceAddr);
 

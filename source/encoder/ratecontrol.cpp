@@ -2120,7 +2120,7 @@ void RateControl::hrdFullness(SEIBufferingPeriod *seiBP)
 void RateControl::updateVbvPlan(Encoder* enc)
 {
     m_bufferFill = m_bufferFillFinal;
-    enc->updateVbvPlan(this);
+    //enc->updateVbvPlan(this);//ldy delete updateVbvPlan in encoder
 }
 
 double RateControl::predictSize(Predictor *p, double q, double var)

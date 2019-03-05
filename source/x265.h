@@ -1769,13 +1769,6 @@ x265_encoder* x265_encoder_open(x265_param *);
  *      (e.g. filenames) should not be modified by the calling application. */
 void x265_encoder_parameters(x265_encoder *, x265_param *);
 
-/* x265_encoder_headers:
- *      return the SPS and PPS that will be used for the whole stream.
- *      *pi_nal is the number of NAL units outputted in pp_nal.
- *      returns negative on error, total byte size of payload data on success
- *      the payloads of all output NALs are guaranteed to be sequential in memory. */
-int x265_encoder_headers(x265_encoder *, x265_nal **pp_nal, uint32_t *pi_nal);
-
 /* x265_encoder_encode:
  *      encode one picture.
  *      *pi_nal is the number of NAL units outputted in pp_nal.
@@ -1784,7 +1777,7 @@ int x265_encoder_headers(x265_encoder *, x265_nal **pp_nal, uint32_t *pi_nal);
  *      the payloads of all output NALs are guaranteed to be sequential in memory.
  *      To flush the encoder and retrieve delayed output pictures, pass pic_in as NULL.
  *      Once flushing has begun, all subsequent calls must pass pic_in as NULL. */
-int x265_encoder_encode(x265_encoder *encoder, x265_nal **pp_nal, uint32_t *pi_nal, x265_picture *pic_in, x265_picture *pic_out);
+int x265_encoder_encode(x265_encoder *encoder, x265_picture *pic_in);
 
 /* x265_encoder_reconfig:
  *      various parameters from x265_param are copied.
@@ -1801,14 +1794,6 @@ int x265_encoder_encode(x265_encoder *encoder, x265_nal **pp_nal, uint32_t *pi_n
  *      parameters to take this into account. */
 int x265_encoder_reconfig(x265_encoder *, x265_param *);
 
-/* x265_encoder_get_stats:
- *       returns encoder statistics */
-void x265_encoder_get_stats(x265_encoder *encoder, x265_stats *, uint32_t statsSizeBytes);
-
-/* x265_encoder_log:
- *       write a line to the configured CSV file.  If a CSV filename was not
- *       configured, or file open failed, this function will perform no write. */
-void x265_encoder_log(x265_encoder *encoder, int argc, char **argv);
 
 /* x265_encoder_close:
  *      close an encoder handler */
@@ -1829,24 +1814,6 @@ void x265_encoder_close(x265_encoder *);
  *      Should not be called during an x265_encoder_encode. */
 
 int x265_encoder_intra_refresh(x265_encoder *);
-
-/* x265_encoder_ctu_info:
- *    Copy CTU information such as ctu address and ctu partition structure of all
- *    CTUs in each frame. The function is invoked only if "--ctu-info" is enabled and
- *    the encoder will wait for this copy to complete if enabled.
- */
-int x265_encoder_ctu_info(x265_encoder *, int poc, x265_ctu_info_t** ctu);
-
-/* x265_get_slicetype_poc_and_scenecut:
- *     get the slice type, poc and scene cut information for the current frame,
- *     returns negative on error, 0 when access unit were output.
- *     This API must be called after(poc >= lookaheadDepth + bframes + 2) condition check */
-int x265_get_slicetype_poc_and_scenecut(x265_encoder *encoder, int *slicetype, int *poc, int* sceneCut);
-
-/* x265_get_ref_frame_list:
- *     returns negative on error, 0 when access unit were output.
- *     This API must be called after(poc >= lookaheadDepth + bframes + 2) condition check */
-int x265_get_ref_frame_list(x265_encoder *encoder, x265_picyuv**, x265_picyuv**, int, int, int*, int*);
 
 /* x265_set_analysis_data:
  *     set the analysis data. The incoming analysis_data structure is assumed to be AVC-sized blocks.
@@ -1886,11 +1853,6 @@ double x265_calculate_vmafscore(x265_param*, x265_vmaf_data*);
 /* x265_calculate_vmaf_framelevelscore:
  *    returns VMAF score for each frame in a given input video. */
 double x265_calculate_vmaf_framelevelscore(x265_vmaf_framedata*);
-/* x265_vmaf_encoder_log:
- *       write a line to the configured CSV file.  If a CSV filename was not
- *       configured, or file open failed, this function will perform no write.
- *       This api will be called only when ENABLE_LIBVMAF cmake option is set */
-void x265_vmaf_encoder_log(x265_encoder *encoder, int argc, char **argv, x265_param*, x265_vmaf_data*);
 
 #endif
 
@@ -1928,28 +1890,20 @@ typedef struct x265_api
     void          (*picture_init)(x265_param*, x265_picture*);
     x265_encoder* (*encoder_open)(x265_param*);
     void          (*encoder_parameters)(x265_encoder*, x265_param*);
-    int           (*encoder_reconfig)(x265_encoder*, x265_param*);
-    int           (*encoder_headers)(x265_encoder*, x265_nal**, uint32_t*);
-    int           (*encoder_encode)(x265_encoder*, x265_nal**, uint32_t*, x265_picture*, x265_picture*);
-    void          (*encoder_get_stats)(x265_encoder*, x265_stats*, uint32_t);
-    void          (*encoder_log)(x265_encoder*, int, char**);
+    int           (*encoder_encode)(x265_encoder*, x265_picture*);
     void          (*encoder_close)(x265_encoder*);
     void          (*cleanup)(void);
 
     int           sizeof_frame_stats;   /* sizeof(x265_frame_stats) */
     int           (*encoder_intra_refresh)(x265_encoder*);
-    int           (*encoder_ctu_info)(x265_encoder*, int, x265_ctu_info_t**);
-    int           (*get_slicetype_poc_and_scenecut)(x265_encoder*, int*, int*, int*);
-    int           (*get_ref_frame_list)(x265_encoder*, x265_picyuv**, x265_picyuv**, int, int, int*, int*);
     FILE*         (*csvlog_open)(const x265_param*);
     void          (*csvlog_frame)(const x265_param*, const x265_picture*);
     void          (*csvlog_encode)(const x265_param*, const x265_stats *, int, int, int, char**);
     void          (*dither_image)(x265_picture*, int, int, int16_t*, int);
-    int           (*set_analysis_data)(x265_encoder *encoder, x265_analysis_data *analysis_data, int poc, uint32_t cuBytes);
+    //int           (*set_analysis_data)(x265_encoder *encoder, x265_analysis_data *analysis_data, int poc, uint32_t cuBytes);
 #if ENABLE_LIBVMAF
     double        (*calculate_vmafscore)(x265_param *, x265_vmaf_data *);
     double        (*calculate_vmaf_framelevelscore)(x265_vmaf_framedata *);
-    void          (*vmaf_encoder_log)(x265_encoder*, int, char**, x265_param *, x265_vmaf_data *);
 #endif
     /* add new pointers to the end, or increment X265_MAJOR_VERSION */
 } x265_api;

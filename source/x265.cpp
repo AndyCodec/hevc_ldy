@@ -575,7 +575,7 @@ int main(int argc, char **argv)
     get_argv_utf8(&argc, &argv);
 #endif
 
-    ReconPlay* reconPlay = NULL;
+    //ReconPlay* reconPlay = NULL;
     CLIOptions cliopt;
 
     if (cliopt.parse(argc, argv)) //解析命令行参数
@@ -593,9 +593,6 @@ int main(int argc, char **argv)
 #endif
     /* This allows muxers to modify bitstream format */
     cliopt.output->setParam(param);
-
-    if (cliopt.reconPlayCmd)
-        reconPlay = new ReconPlay(cliopt.reconPlayCmd, *param);
 
     /* note: we could try to acquire a different libx265 API here based on
     * the profile found during option parsing, but it must be done before
@@ -618,30 +615,15 @@ int main(int argc, char **argv)
     if (signal(SIGINT, sigint_handler) == SIG_ERR)
         x265_log(param, X265_LOG_ERROR, "Unable to register CTRL+C handler: %s\n", strerror(errno));
 
-    x265_picture pic_orig, pic_out;
+    x265_picture pic_orig;
     x265_picture *pic_in = &pic_orig;
     /* Allocate recon picture if analysis save/load is enabled */
     std::priority_queue<int64_t>* pts_queue = cliopt.output->needPTS() ? new std::priority_queue<int64_t>() : NULL;
-    x265_picture *pic_recon = (cliopt.recon || param->analysisSave || param->analysisLoad || pts_queue || reconPlay || param->csvLogLevel) ? &pic_out : NULL;
     uint32_t inFrameCount = 0;
     uint32_t outFrameCount = 0;
-    x265_nal *p_nal;
     x265_stats stats;
-    uint32_t nal;
     int16_t *errorBuf = NULL;
     int ret = 0;
-
-    if (!param->bRepeatHeaders)
-    {
-        if (api->encoder_headers(encoder, &p_nal, &nal) < 0)
-        {
-            x265_log(param, X265_LOG_ERROR, "Failure generating stream headers\n");
-            ret = 3;
-            goto fail;
-        }
-        else
-            cliopt.totalbytes += cliopt.output->writeHeaders(p_nal, nal);
-    }
 
     api->picture_init(param, pic_in);
 
@@ -687,7 +669,7 @@ int main(int argc, char **argv)
         }
 
         //进行编码的入口函数，读入24帧后才开始编码
-        int numEncoded = api->encoder_encode(encoder, &p_nal, &nal, pic_in, pic_recon);
+        int numEncoded = api->encoder_encode(encoder, pic_in);
         if (numEncoded < 0)
         {
             b_ctrl_c = 1;
@@ -695,23 +677,7 @@ int main(int argc, char **argv)
             break;
         }
 
-        if (reconPlay && numEncoded)
-            reconPlay->writePicture(*pic_recon);
-
         outFrameCount += numEncoded;
-
-        if (numEncoded && pic_recon && cliopt.recon)
-            cliopt.recon->writePicture(pic_out);
-        if (nal)
-        {
-            cliopt.totalbytes += cliopt.output->writeFrame(p_nal, nal, pic_out);
-            if (pts_queue)
-            {
-                pts_queue->push(-pic_out.pts);
-                if (pts_queue->size() > 2)
-                    pts_queue->pop();
-            }
-        }
 
         cliopt.printStatus(outFrameCount);
     }
@@ -719,29 +685,14 @@ int main(int argc, char **argv)
     /* Flush the encoder */
     while (!b_ctrl_c)
     {
-        int numEncoded = api->encoder_encode(encoder, &p_nal, &nal, NULL, pic_recon);
+        int numEncoded = api->encoder_encode(encoder, pic_in);
         if (numEncoded < 0)
         {
             ret = 4;
             break;
         }
 
-        if (reconPlay && numEncoded)
-            reconPlay->writePicture(*pic_recon);
-
         outFrameCount += numEncoded;
-        if (numEncoded && pic_recon && cliopt.recon)
-            cliopt.recon->writePicture(pic_out);
-        if (nal)
-        {
-            cliopt.totalbytes += cliopt.output->writeFrame(p_nal, nal, pic_out);
-            if (pts_queue)
-            {
-                pts_queue->push(-pic_out.pts);
-                if (pts_queue->size() > 2)
-                    pts_queue->pop();
-            }
-        }
 
         cliopt.printStatus(outFrameCount);
         if (!numEncoded)
@@ -752,17 +703,8 @@ int main(int argc, char **argv)
     if (cliopt.bProgress)
         fprintf(stderr, "%*s\r", 80, " ");
 
-fail:
-
-    delete reconPlay;
-
-    api->encoder_get_stats(encoder, &stats, sizeof(stats));
     if (param->csvfn && !b_ctrl_c)
-#if ENABLE_LIBVMAF
-        api->vmaf_encoder_log(encoder, argc, argv, param, vmafdata);
-#else
-        api->encoder_log(encoder, argc, argv);
-#endif
+
     api->encoder_close(encoder);
 
     int64_t second_largest_pts = 0;
