@@ -32,7 +32,6 @@
 namespace X265_NS {
 // encoder namespace
 
-class Encoder;
 class Frame;
 class SEIBufferingPeriod;
 struct SPS;
@@ -242,7 +241,6 @@ public:
     void destroy();
 
     // to be called for each curFrame to process RateControl and set QP
-    int  rateControlStart(Frame* curFrame, RateControlEntry* rce, Encoder* enc);
     void rateControlUpdateStats(RateControlEntry* rce);
     int  rateControlEnd(Frame* curFrame, int64_t bits, RateControlEntry* rce, int *filler);
     int  rowVbvRateControl(Frame* curFrame, uint32_t row, RateControlEntry* rce, double& qpVbv, uint32_t* m_sliceBaseRow, uint32_t sliceId);
@@ -266,7 +264,7 @@ protected:
 
     x265_zone* getZone();
     double getQScale(RateControlEntry *rce, double rateFactor);
-    double rateEstimateQscale(Frame* pic, RateControlEntry *rce); // main logic for calculating QP based on ABR
+    //double rateEstimateQscale(Frame* pic, RateControlEntry *rce); // main logic for calculating QP based on ABR
     double tuneAbrQScaleFromFeedback(double qScale);
     void   accumPQpUpdate();
 
@@ -274,7 +272,7 @@ protected:
     int    updateVbv(int64_t bits, RateControlEntry* rce);
     void   updatePredictor(Predictor *p, double q, double var, double bits);
     double clipQscale(Frame* pic, RateControlEntry* rce, double q);
-    void   updateVbvPlan(Encoder* enc);
+    //void   updateVbvPlan(Encoder* enc);
     double predictSize(Predictor *p, double q, double var);
     void   checkAndResetABR(RateControlEntry* rce, bool isFrameDone);
     double predictRowsSizeSum(Frame* pic, RateControlEntry* rce, double qpm, int32_t& encodedBits);

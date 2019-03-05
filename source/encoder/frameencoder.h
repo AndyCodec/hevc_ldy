@@ -45,7 +45,6 @@ namespace X265_NS {
 // private x265 namespace
 
 class ThreadPool;
-class Encoder;
 
 #define ANGULAR_MODE_ID 2
 #define AMP_ID 3
@@ -119,8 +118,6 @@ public:
 
     virtual ~FrameEncoder() {}
 
-    virtual bool init(Encoder *top, int numRows, int numCols);
-
     void destroy();
 
     /* blocks until worker thread is done, returns access unit */
@@ -179,7 +176,6 @@ public:
     CUStats                  m_cuStats;
 #endif
 
-    Encoder*                 m_top;
     x265_param*              m_param;
     Frame*                   m_frame;
     NoiseReduction*          m_nr;
@@ -223,11 +219,6 @@ protected:
     void threadMain();
     int  collectCTUStatistics(const CUData& ctu, FrameStats* frameLog);
     void noiseReductionUpdate();
-    void computeAvgTrainingData();
-
-    /* Called by WaveFront::findJob() */
-    virtual void processRow(int row, int threadId);
-    virtual void processRowEncoder(int row, ThreadLocalData& tld);
 
     void enqueueRowEncoder(int row) { WaveFront::enqueueRow(row * 2 + 0); }
     void enqueueRowFilter(int row)  { WaveFront::enqueueRow(row * 2 + 1); }

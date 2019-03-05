@@ -56,47 +56,6 @@ static const char* defaultAnalysisFileName = "x265_analysis.dat";
 
 using namespace X265_NS;
 
-Encoder::Encoder()
-{
-    m_aborted = false;
-    m_reconfigure = false;
-    m_reconfigureRc = false;
-    m_encodedFrameNum = 0;
-    m_pocLast = -1;
-    m_curEncoder = 0;
-    m_numLumaWPFrames = 0;
-    m_numChromaWPFrames = 0;
-    m_numLumaWPBiFrames = 0;
-    m_numChromaWPBiFrames = 0;
-    m_lookahead = NULL;
-    m_rateControl = NULL;
-    m_dpb = NULL;
-    m_exportedPic = NULL;
-    m_numDelayedPic = 0;
-    m_outputCount = 0;
-    m_param = NULL;
-    m_latestParam = NULL;
-    m_threadPool = NULL;
-    m_analysisFileIn = NULL;
-    m_analysisFileOut = NULL;
-    m_offsetEmergency = NULL;
-    m_iFrameNum = 0;
-    m_iPPSQpMinus26 = 0;
-    m_rpsInSpsCount = 0;
-    m_cB = 1.0;
-    m_cR = 1.0;
-    MotionEstimate::initScales();
-
-#if ENABLE_HDR10_PLUS
-    m_hdr10plus_api = hdr10plus_api_get();
-    m_numCimInfo = 0;
-    m_cim = NULL;
-#endif
-
-    m_prevTonemapPayload.payload = NULL;
-    m_startPoint = 0;
-    m_saveCTUSize = 0;
-}
 inline char *strcatFilename(const char *input, const char *suffix)
 {
     char *output = X265_MALLOC(char, strlen(input) + strlen(suffix) + 1);
@@ -365,8 +324,8 @@ void LookEncoder::create()
     else
         m_scalingList.setupQuantMatrices(m_sps.chromaFormatIdc);
 
-    int numRows = (m_param->sourceHeight + m_param->maxCUSize - 1) / m_param->maxCUSize;
-    int numCols = (m_param->sourceWidth + m_param->maxCUSize - 1) / m_param->maxCUSize;
+    //int numRows = (m_param->sourceHeight + m_param->maxCUSize - 1) / m_param->maxCUSize;
+    //int numCols = (m_param->sourceWidth + m_param->maxCUSize - 1) / m_param->maxCUSize;
 
     if (m_param->bEmitHRDSEI)
         m_rateControl->initHRD(m_sps);
@@ -1776,5 +1735,4 @@ char* LookEncoder::statsString(EncStats& stat, char* buffer)
             x265_ssim2dB(stat.m_globalSsim / (double)stat.m_numPics));
     }
     return buffer;
-    return NULL;
 }

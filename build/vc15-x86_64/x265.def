@@ -18,7 +18,6 @@ x265_encoder_close
 x265_cleanup
 x265_api_get_160
 x265_api_query
-x265_encoder_intra_refresh
 x265_csvlog_open
 x265_csvlog_frame
 x265_csvlog_encode

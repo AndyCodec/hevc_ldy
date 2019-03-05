@@ -91,7 +91,6 @@ x265_encoder *x265_encoder_open(x265_param *p)
         return NULL;
     }
 
-    //Encoder* encoder = NULL;
     LookEncoder* encoder = NULL;
     x265_param* param = PARAM_NS::x265_param_alloc();
     x265_param* latestParam = PARAM_NS::x265_param_alloc();
@@ -107,7 +106,6 @@ x265_encoder *x265_encoder_open(x265_param *p)
     if (x265_check_params(param))
         goto fail;
 
-    //encoder = new Encoder;
     encoder = new LookEncoder;
     if (!param->rc.bEnableSlowFirstPass)
         PARAM_NS::x265_param_apply_fastfirstpass(param);
@@ -218,16 +216,6 @@ void x265_encoder_close(x265_encoder *enc)
     }
 }
 
-int x265_encoder_intra_refresh(x265_encoder *enc)
-{
-    if (!enc)
-        return -1;
-
-    Encoder *encoder = static_cast<Encoder*>(enc);
-    encoder->m_bQueuedIntraRefresh = 1;
-    return 0;
-}
-
 void x265_cleanup(void)
 {
     BitCost::destroy();
@@ -295,7 +283,6 @@ static const x265_api libapi =
     &x265_cleanup,
 
     sizeof(x265_frame_stats),
-    &x265_encoder_intra_refresh,
     &x265_csvlog_open,
     &x265_csvlog_frame,
     &x265_csvlog_encode,

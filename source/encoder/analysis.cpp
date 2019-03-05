@@ -32,7 +32,7 @@
 
 #include "analysis.h"
 #include "rdcost.h"
-#include "encoder.h"
+//#include "encoder.h"
 
 using namespace X265_NS;
 

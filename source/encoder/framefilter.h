@@ -34,7 +34,6 @@
 namespace X265_NS {
 // private x265 namespace
 
-class Encoder;
 class Entropy;
 class FrameEncoder;
 struct ThreadLocalData;
@@ -89,11 +88,6 @@ public:
         ~ParallelFilter()
         { }
 
-        void processTasks(int workerThreadId);
-
-        // Apply SAO on a CU in current row
-        void processSaoCTU(SAOParam *saoParam, int col);
-
         // Copy and Save SAO reference pixels for SAO Rdo decide
         void copySaoAboveRef(const CUData *ctu, PicYuv* reconPic, uint32_t cuAddr, int col);
 
@@ -122,13 +116,11 @@ public:
         return (colNum == (int)m_numCols - 1) ? m_lastWidth : m_param->maxCUSize;
     }
 
-    void init(Encoder *top, FrameEncoder *frame, int numRows, uint32_t numCols);
+    //void init(Encoder *top, FrameEncoder *frame, int numRows, uint32_t numCols);
     void destroy();
 
     void start(Frame *pic, Entropy& initState);
 
-    void processRow(int row);
-    void processPostRow(int row);
     void computeMEIntegral(int row);
 };
 }

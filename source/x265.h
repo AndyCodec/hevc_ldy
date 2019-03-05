@@ -1799,21 +1799,6 @@ int x265_encoder_reconfig(x265_encoder *, x265_param *);
  *      close an encoder handler */
 void x265_encoder_close(x265_encoder *);
 
-/* x265_encoder_intra_refresh:
- *      If an intra refresh is not in progress, begin one with the next P-frame.
- *      If an intra refresh is in progress, begin one as soon as the current one finishes.
- *      Requires bIntraRefresh to be set.
- *
- *      Useful for interactive streaming where the client can tell the server that packet loss has
- *      occurred.  In this case, keyint can be set to an extremely high value so that intra refreshes
- *      occur only when calling x265_encoder_intra_refresh.
- *
- *      In multi-pass encoding, if x265_encoder_intra_refresh is called differently in each pass,
- *      behavior is undefined.
- *
- *      Should not be called during an x265_encoder_encode. */
-
-int x265_encoder_intra_refresh(x265_encoder *);
 
 /* x265_set_analysis_data:
  *     set the analysis data. The incoming analysis_data structure is assumed to be AVC-sized blocks.
@@ -1895,7 +1880,6 @@ typedef struct x265_api
     void          (*cleanup)(void);
 
     int           sizeof_frame_stats;   /* sizeof(x265_frame_stats) */
-    int           (*encoder_intra_refresh)(x265_encoder*);
     FILE*         (*csvlog_open)(const x265_param*);
     void          (*csvlog_frame)(const x265_param*, const x265_picture*);
     void          (*csvlog_encode)(const x265_param*, const x265_stats *, int, int, int, char**);
