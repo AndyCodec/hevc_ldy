@@ -35,8 +35,8 @@
 #include "slicetype.h"
 #include "ratecontrol.h"
 #include "dpb.h"
-#include "nal.h"
-#include "entropy.h"
+//#include "nal.h"
+//#include "entropy.h"
 
 #include "x265.h"
 

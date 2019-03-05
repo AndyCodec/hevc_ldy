@@ -29,8 +29,6 @@
 #include "x265cli.h"
 
 #include "input/input.h"
-#include "output/output.h"
-#include "output/reconplay.h"
 
 #if HAVE_VLD
 /* Visual Leak Detector */
@@ -69,10 +67,7 @@ static void sigint_handler(int)
 struct CLIOptions
 {
     InputFile* input;
-    ReconFile* recon;
-    OutputFile* output;
     FILE*       qpfile;
-    const char* reconPlayCmd;
     const x265_api* api;
     x265_param* param;
     x265_vmaf_data* vmafData;
@@ -91,10 +86,7 @@ struct CLIOptions
     CLIOptions()
     {
         input = NULL;
-        recon = NULL;
-        output = NULL;
         qpfile = NULL;
-        reconPlayCmd = NULL;
         api = NULL;
         param = NULL;
         vmafData = NULL;
@@ -118,15 +110,9 @@ void CLIOptions::destroy()
     if (input)
         input->release();
     input = NULL;
-    if (recon)
-        recon->release();
-    recon = NULL;
     if (qpfile)
         fclose(qpfile);
     qpfile = NULL;
-    if (output)
-        output->release();
-    output = NULL;
 }
 
 void CLIOptions::printStatus(uint32_t frameNum)
@@ -161,11 +147,7 @@ bool CLIOptions::parse(int argc, char **argv)
     bool bError = false;
     int bShowHelp = false;
     int inputBitDepth = 8;
-    int outputBitDepth = 0;
-    int reconFileBitDepth = 0;
     const char *inputfn = NULL;
-    const char *reconfn = NULL;
-    const char *outputfn = NULL;
     const char *preset = NULL;
     const char *tune = NULL;
     const char *profile = NULL;
@@ -186,26 +168,13 @@ bool CLIOptions::parse(int argc, char **argv)
             preset = optarg;
         else if (c == 't')
             tune = optarg;
-        else if (c == 'D')
-            outputBitDepth = atoi(optarg);
         else if (c == 'P')
             profile = optarg;
         else if (c == '?')
             bShowHelp = true;
     }
 
-    if (!outputBitDepth && profile)
-    {
-        /* try to derive the output bit depth from the requested profile */
-        if (strstr(profile, "10"))
-            outputBitDepth = 10;
-        else if (strstr(profile, "12"))
-            outputBitDepth = 12;
-        else
-            outputBitDepth = 8;
-    }
-
-    api = x265_api_get(outputBitDepth);
+    api = x265_api_get(8);
     if (!api)
     {
         x265_log(NULL, X265_LOG_WARNING, "falling back to default bit-depth\n");
@@ -293,18 +262,13 @@ bool CLIOptions::parse(int argc, char **argv)
             OPT2("frame-skip", "seek") this->seek = (uint32_t)x265_atoi(optarg, bError);
             OPT("frames") this->framesToBeEncoded = (uint32_t)x265_atoi(optarg, bError);
             OPT("no-progress") this->bProgress = false;
-            OPT("output") outputfn = optarg;
             OPT("input") inputfn = optarg;
-            OPT("recon") reconfn = optarg;
             OPT("input-depth") inputBitDepth = (uint32_t)x265_atoi(optarg, bError);
             OPT("dither") this->bDither = true;
-            OPT("recon-depth") reconFileBitDepth = (uint32_t)x265_atoi(optarg, bError);
             OPT("y4m") this->bForceY4m = true;
             OPT("profile") /* handled above */;
             OPT("preset")  /* handled above */;
             OPT("tune")    /* handled above */;
-            OPT("output-depth")   /* handled above */;
-            OPT("recon-y4m-exec") reconPlayCmd = optarg;
             OPT("qpfile")
             {
                 this->qpfile = x265_fopen(optarg, "rb");
@@ -332,8 +296,6 @@ bool CLIOptions::parse(int argc, char **argv)
 
     if (optind < argc && !inputfn)
         inputfn = argv[optind++];
-    if (optind < argc && !outputfn)
-        outputfn = argv[optind++];
     if (optind < argc)
     {
         x265_log(param, X265_LOG_WARNING, "extra unused command arguments given <%s>\n", argv[optind]);
@@ -347,7 +309,7 @@ bool CLIOptions::parse(int argc, char **argv)
         showHelp(param);
     }
 
-    if (!inputfn || !outputfn)
+    if (!inputfn)
     {
         x265_log(param, X265_LOG_ERROR, "input or output file not specified, try --help for help\n");
         return true;
@@ -432,24 +394,6 @@ bool CLIOptions::parse(int argc, char **argv)
 
     this->input->startReader();
 
-    if (reconfn)
-    {
-        if (reconFileBitDepth == 0)
-            reconFileBitDepth = param->internalBitDepth;
-        this->recon = ReconFile::open(reconfn, param->sourceWidth, param->sourceHeight, reconFileBitDepth,
-                                      param->fpsNum, param->fpsDenom, param->internalCsp);
-        if (this->recon->isFail())
-        {
-            x265_log(param, X265_LOG_WARNING, "unable to write reconstructed outputs file\n");
-            this->recon->release();
-            this->recon = 0;
-        }
-        else
-            general_log(param, this->recon->getName(), X265_LOG_INFO,
-                    "reconstructed images %dx%d fps %d/%d %s\n",
-                    param->sourceWidth, param->sourceHeight, param->fpsNum, param->fpsDenom,
-                    x265_source_csp_names[param->internalCsp]);
-    }
 #if ENABLE_LIBVMAF
     if (!reconfn)
     {
@@ -474,13 +418,6 @@ bool CLIOptions::parse(int argc, char **argv)
         return true;
     }
 #endif
-    this->output = OutputFile::open(outputfn, info);
-    if (this->output->isFail())
-    {
-        x265_log_file(param, X265_LOG_ERROR, "failed to open output file <%s> for writing\n", outputfn);
-        return true;
-    }
-    general_log_file(param, this->output->getName(), X265_LOG_INFO, "output file: %s\n", outputfn);
     return false;
 }
 
@@ -575,7 +512,6 @@ int main(int argc, char **argv)
     get_argv_utf8(&argc, &argv);
 #endif
 
-    //ReconPlay* reconPlay = NULL;
     CLIOptions cliopt;
 
     if (cliopt.parse(argc, argv)) //解析命令行参数
@@ -592,7 +528,6 @@ int main(int argc, char **argv)
     x265_vmaf_data* vmafdata = cliopt.vmafData;
 #endif
     /* This allows muxers to modify bitstream format */
-    cliopt.output->setParam(param);
 
     /* note: we could try to acquire a different libx265 API here based on
     * the profile found during option parsing, but it must be done before
@@ -618,7 +553,6 @@ int main(int argc, char **argv)
     x265_picture pic_orig;
     x265_picture *pic_in = &pic_orig;
     /* Allocate recon picture if analysis save/load is enabled */
-    std::priority_queue<int64_t>* pts_queue = cliopt.output->needPTS() ? new std::priority_queue<int64_t>() : NULL;
     uint32_t inFrameCount = 0;
     uint32_t outFrameCount = 0;
     x265_stats stats;
@@ -706,19 +640,6 @@ int main(int argc, char **argv)
     if (param->csvfn && !b_ctrl_c)
 
     api->encoder_close(encoder);
-
-    int64_t second_largest_pts = 0;
-    int64_t largest_pts = 0;
-    if (pts_queue && pts_queue->size() >= 2)
-    {
-        second_largest_pts = -pts_queue->top();
-        pts_queue->pop();
-        largest_pts = -pts_queue->top();
-        pts_queue->pop();
-        delete pts_queue;
-        pts_queue = NULL;
-    }
-    cliopt.output->closeFile(largest_pts, second_largest_pts);
 
     if (b_ctrl_c)
         general_log(param, NULL, X265_LOG_INFO, "aborted at input frame %d, output frame %d\n",

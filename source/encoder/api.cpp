@@ -26,9 +26,9 @@
 #include "param.h"
 
 #include "encoder.h"
-#include "entropy.h"
+//#include "entropy.h"
 #include "level.h"
-#include "nal.h"
+//#include "nal.h"
 #include "bitcost.h"
 
 #if ENABLE_LIBVMAF
