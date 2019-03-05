@@ -91,7 +91,8 @@ x265_encoder *x265_encoder_open(x265_param *p)
         return NULL;
     }
 
-    Encoder* encoder = NULL;
+    //Encoder* encoder = NULL;
+    LookEncoder* encoder = NULL;
     x265_param* param = PARAM_NS::x265_param_alloc();
     x265_param* latestParam = PARAM_NS::x265_param_alloc();
     if (!param || !latestParam)
@@ -106,7 +107,8 @@ x265_encoder *x265_encoder_open(x265_param *p)
     if (x265_check_params(param))
         goto fail;
 
-    encoder = new Encoder;
+    //encoder = new Encoder;
+    encoder = new LookEncoder;
     if (!param->rc.bEnableSlowFirstPass)
         PARAM_NS::x265_param_apply_fastfirstpass(param);
 
@@ -156,7 +158,8 @@ int x265_encoder_headers(x265_encoder *enc, x265_nal **pp_nal, uint32_t *pi_nal)
 {
     if (pp_nal && enc)
     {
-        Encoder *encoder = static_cast<Encoder*>(enc);
+        //Encoder *encoder = static_cast<Encoder*>(enc);
+        LookEncoder *encoder = static_cast<LookEncoder*>(enc);
         Entropy sbacCoder;
         Bitstream bs;
         if (encoder->m_param->rc.bStatRead && encoder->m_param->bMultiPassOptRPS)
@@ -185,7 +188,8 @@ void x265_encoder_parameters(x265_encoder *enc, x265_param *out)
 {
     if (enc && out)
     {
-        Encoder *encoder = static_cast<Encoder*>(enc);
+        //Encoder *encoder = static_cast<Encoder*>(enc);
+        LookEncoder *encoder = static_cast<LookEncoder*>(enc);
         memcpy(out, encoder->m_param, sizeof(x265_param));
     }
 }
@@ -259,7 +263,8 @@ int x265_encoder_encode(x265_encoder *enc, x265_nal **pp_nal, uint32_t *pi_nal, 
     if (!enc)
         return -1;
 
-    Encoder *encoder = static_cast<Encoder*>(enc);
+    //Encoder *encoder = static_cast<Encoder*>(enc);
+    LookEncoder *encoder = static_cast<LookEncoder*>(enc);
     int numEncoded;
 
     int encoder_count = 0;
