@@ -259,25 +259,6 @@ bool FrameEncoder::initializeGeoms()
     return true;
 }
 
-bool FrameEncoder::startCompressFrame(Frame* curFrame)
-{
-    m_slicetypeWaitTime = x265_mdate() - m_prevOutputTime;
-    m_frame = curFrame;
-    m_sliceType = curFrame->m_lowres.sliceType;
-    curFrame->m_encData->m_frameEncoderID = m_jpId;
-    curFrame->m_encData->m_jobProvider = this;
-    curFrame->m_encData->m_slice->m_mref = m_mref;
-
-    if (!m_cuGeoms)
-    {
-        if (!initializeGeoms())
-            return false;
-    }
-
-    m_enable.trigger();
-    return true;
-}
-
 void FrameEncoder::threadMain()
 {
     THREAD_NAME("Frame", m_jpId);
@@ -2105,20 +2086,4 @@ void FrameEncoder::vmafFrameLevelScore()
 }
 #endif
 
-Frame *FrameEncoder::getEncodedPicture(NALList& output)
-{
-    if (m_frame)
-    {    
-        /* block here until worker thread completes */
-        m_done.wait();//m_done一开始为wait ，待初始化完毕触发一次 但是此时m_frame为null 因为m_frame 在m_enable.trigger()前为null
-
-        Frame *ret = m_frame;
-        m_frame = NULL;
-        output.takeContents(m_nalList);
-        m_prevOutputTime = x265_mdate();
-        return ret;
-    }
-
-    return NULL;
-}
 }

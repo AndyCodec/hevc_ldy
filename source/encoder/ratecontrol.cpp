@@ -2872,14 +2872,14 @@ int RateControl::writeRateControlFrameStats(Frame* curFrame, RateControlEntry* r
 #pragma warning(disable: 4996) // POSIX function names are just fine, thank you
 #endif
 
-/* called when the encoder is flushing, and thus the final frame count is
- * unambiguously known */
-void RateControl::setFinalFrameCount(int count)
-{
-    m_finalFrameCount = count;
-    /* unblock waiting threads */
-    m_startEndOrder.poke();
-}
+///* called when the encoder is flushing, and thus the final frame count is
+// * unambiguously known */
+//void RateControl::setFinalFrameCount(int count)
+//{
+//    m_finalFrameCount = count;
+//    /* unblock waiting threads */
+//    m_startEndOrder.poke();
+//}
 
 /* called when the encoder is closing, and no more frames will be output.
  * all blocked functions must finish so the frame encoder threads can be

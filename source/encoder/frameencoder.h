@@ -123,11 +123,7 @@ public:
 
     void destroy();
 
-    /* triggers encode of a new frame by the worker thread */
-    bool startCompressFrame(Frame* curFrame);
-
     /* blocks until worker thread is done, returns access unit */
-    Frame *getEncodedPicture(NALList& list);
 
     Event                    m_enable;
     Event                    m_done;

@@ -241,7 +241,6 @@ public:
     void stopJobs();
     void destroy();
 
-    //int encode(const x265_picture* pic, x265_picture *pic_out);
     int encode_lookahead(const x265_picture* pic);
 
     int reconfigureParam(x265_param* encParam, x265_param* param);
@@ -276,25 +275,11 @@ public:
 
     void freeAnalysis(x265_analysis_data* analysis);
 
-    void allocAnalysis2Pass(x265_analysis_2Pass* analysis, int sliceType);
-
     void freeAnalysis2Pass(x265_analysis_2Pass* analysis, int sliceType);
-
-    void readAnalysisFile(x265_analysis_data* analysis, int poc, const x265_picture* picIn, int paramBytes);
-
-    void readAnalysisFile(x265_analysis_data* analysis, int poc, const x265_picture* picIn, int paramBytes, cuLocation cuLoc);
 
     int getCUIndex(cuLocation* cuLoc, uint32_t* count, int bytes, int flag);
 
     int getPuShape(puOrientation* puOrient, int partSize, int numCTU);
-
-    void writeAnalysisFile(x265_analysis_data* pic, FrameData &curEncData);
-    void readAnalysis2PassFile(x265_analysis_2Pass* analysis2Pass, int poc, int sliceType);
-    void writeAnalysis2PassFile(x265_analysis_2Pass* analysis2Pass, FrameData &curEncData, int slicetype);
-
-    int validateAnalysisData(x265_analysis_data* analysis, int readWriteFlag);
-
-    void calcRefreshInterval(Frame* frameEnc);
 
     void initRefIdx();
     void analyseRefIdx(int *numRefIdx);

@@ -237,7 +237,7 @@ public:
     void initHRD(SPS& sps);
     void reconfigureRC();
 
-    void setFinalFrameCount(int count);
+    //void setFinalFrameCount(int count);
     void terminate();          /* un-block all waiting functions so encoder may close */
     void destroy();
 
