@@ -44,14 +44,14 @@ int SEI::countPayloadSize(const SPS& sps)
     return count;
 }
 
-void SEI::alignAndSerialize(Bitstream& bs, int lastSei, int isSingleSei, NalUnitType nalUnitType, NALList& list)
-{
-    if (lastSei || !isSingleSei)
-    {
-        bs.writeByteAlignment();
-        list.serialize(nalUnitType, bs);
-    }
-}
+//void SEI::alignAndSerialize(Bitstream& bs, int lastSei, int isSingleSei, NalUnitType nalUnitType, NALList& list)
+//{
+//    if (lastSei || !isSingleSei)
+//    {
+//        bs.writeByteAlignment();
+//        list.serialize(nalUnitType, bs);
+//    }
+//}
 
 /* marshal a single SEI message sei, storing the marshalled representation
  * in bitstream bs */

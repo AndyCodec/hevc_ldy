@@ -398,7 +398,7 @@ void LookEncoder::create()
 
     m_encodeStartTime = x265_mdate();
 
-    m_nalList.m_annexB = !!m_param->bAnnexB;
+    //m_nalList.m_annexB = !!m_param->bAnnexB;
 
     m_emitCLLSEI = p->maxCLL || p->maxFALL;
 
@@ -1670,12 +1670,12 @@ void LookEncoder::configure(x265_param *p)
         p->maxSlices = 1;
     }
     const uint32_t numRows = (p->sourceHeight + p->maxCUSize - 1) / p->maxCUSize;
-    const uint32_t slicesLimit = X265_MIN(numRows, NALList::MAX_NAL_UNITS - 1);
-    if (p->maxSlices > slicesLimit)
-    {
-        x265_log(p, X265_LOG_WARNING, "maxSlices can not be more than min(rows, MAX_NAL_UNITS-1), force set to %d\n", slicesLimit);
-        p->maxSlices = slicesLimit;
-    }
+    //const uint32_t slicesLimit = X265_MIN(numRows, NALList::MAX_NAL_UNITS - 1);
+    //if (p->maxSlices > slicesLimit)
+    //{
+    //    x265_log(p, X265_LOG_WARNING, "maxSlices can not be more than min(rows, MAX_NAL_UNITS-1), force set to %d\n", slicesLimit);
+    //    p->maxSlices = slicesLimit;
+    //}
     if (p->bHDROpt)
     {
         if (p->internalCsp != X265_CSP_I420 || p->internalBitDepth != 10 || p->vui.colorPrimaries != 9 ||

@@ -29,7 +29,7 @@
 #include "threading.h"
 #include "scalinglist.h"
 #include "x265.h"
-#include "nal.h"
+//#include "nal.h"
 #include "framedata.h"
 #ifdef ENABLE_HDR10_PLUS
     #include "dynamicHDR10/hdr10plus.h"
@@ -181,7 +181,7 @@ public:
     VPS                m_vps;
     SPS                m_sps;
     PPS                m_pps;
-    NALList            m_nalList;
+    //NALList            m_nalList;
     ScalingList        m_scalingList;      // quantization matrix information
     Window             m_conformanceWindow;
 

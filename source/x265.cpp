@@ -555,7 +555,6 @@ int main(int argc, char **argv)
     /* Allocate recon picture if analysis save/load is enabled */
     uint32_t inFrameCount = 0;
     uint32_t outFrameCount = 0;
-    x265_stats stats;
     int16_t *errorBuf = NULL;
     int ret = 0;
 
@@ -637,13 +636,7 @@ int main(int argc, char **argv)
     if (cliopt.bProgress)
         fprintf(stderr, "%*s\r", 80, " ");
 
-    if (param->csvfn && !b_ctrl_c)
-
     api->encoder_close(encoder);
-
-    if (b_ctrl_c)
-        general_log(param, NULL, X265_LOG_INFO, "aborted at input frame %d, output frame %d\n",
-            cliopt.seek + inFrameCount, stats.encodedPictureCount);
 
     api->cleanup(); /* Free library singletons */
 

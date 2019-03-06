@@ -25,16 +25,16 @@
 #ifndef X265_FRAMEFILTER_H
 #define X265_FRAMEFILTER_H
 
-#include "common.h"
-#include "frame.h"
-#include "deblock.h"
-#include "sao.h"
-#include "threadpool.h" // class BondedTaskGroup
-
-namespace X265_NS {
-
-struct ThreadLocalData;
-
-}
+//#include "common.h"
+//#include "frame.h"
+//#include "deblock.h"
+//#include "sao.h"
+//#include "threadpool.h" // class BondedTaskGroup
+//
+//namespace X265_NS {
+//
+//struct ThreadLocalData;
+//
+//}
 
 #endif // ifndef X265_FRAMEFILTER_H
