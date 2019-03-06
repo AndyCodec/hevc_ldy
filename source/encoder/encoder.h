@@ -29,7 +29,6 @@
 #include "threading.h"
 #include "scalinglist.h"
 #include "x265.h"
-//#include "nal.h"
 #include "framedata.h"
 #ifdef ENABLE_HDR10_PLUS
     #include "dynamicHDR10/hdr10plus.h"

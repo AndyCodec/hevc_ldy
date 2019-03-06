@@ -27,7 +27,6 @@
 #include "common.h"
 #include "bitstream.h"
 #include "slice.h"
-//#include "nal.h"
 
 namespace X265_NS {
 // private namespace
