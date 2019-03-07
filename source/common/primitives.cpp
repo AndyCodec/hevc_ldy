@@ -52,12 +52,12 @@ extern const uint8_t lumaPartitionMapTable[] =
 EncoderPrimitives primitives;
 
 void setupPixelPrimitives_c(EncoderPrimitives &p);
-void setupDCTPrimitives_c(EncoderPrimitives &p);
+//void setupDCTPrimitives_c(EncoderPrimitives &p);
 void setupFilterPrimitives_c(EncoderPrimitives &p);
 void setupIntraPrimitives_c(EncoderPrimitives &p);
-void setupLoopFilterPrimitives_c(EncoderPrimitives &p);
-void setupSaoPrimitives_c(EncoderPrimitives &p);
-void setupSeaIntegralPrimitives_c(EncoderPrimitives &p);
+//void setupLoopFilterPrimitives_c(EncoderPrimitives &p);
+//void setupSaoPrimitives_c(EncoderPrimitives &p);
+//void setupSeaIntegralPrimitives_c(EncoderPrimitives &p);
 void setupLowPassPrimitives_c(EncoderPrimitives& p);
 
 void setupCPrimitives(EncoderPrimitives &p)
