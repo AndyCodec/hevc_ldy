@@ -68,7 +68,7 @@ struct CLIOptions
 {
     InputFile* input;
     FILE*       qpfile;
-    const x265_api* api;
+    //const x265_api* api;
     x265_param* param;
     x265_vmaf_data* vmafData;
     bool bProgress;
@@ -87,7 +87,7 @@ struct CLIOptions
     {
         input = NULL;
         qpfile = NULL;
-        api = NULL;
+        //api = NULL;
         param = NULL;
         vmafData = NULL;
         framesToBeEncoded = seek = 0;
@@ -174,14 +174,14 @@ bool CLIOptions::parse(int argc, char **argv)
             bShowHelp = true;
     }
 
-    api = x265_api_get(8);
-    if (!api)
-    {
-        x265_log(NULL, X265_LOG_WARNING, "falling back to default bit-depth\n");
-        api = x265_api_get(0);
-    }
+    //api = x265_api_get(8);
+    //if (!api)
+    //{
+    //    x265_log(NULL, X265_LOG_WARNING, "falling back to default bit-depth\n");
+    //    api = x265_api_get(0);
+    //}
 
-    param = api->param_alloc();
+    param = x265_param_alloc();
     if (!param)
     {
         x265_log(NULL, X265_LOG_ERROR, "param alloc failed\n");
@@ -196,7 +196,7 @@ bool CLIOptions::parse(int argc, char **argv)
     }
 #endif
 
-    if (api->param_default_preset(param, preset, tune) < 0)
+    if (x265_param_default_preset(param, preset, tune) < 0)
     {
         x265_log(NULL, X265_LOG_ERROR, "preset or tune unrecognized\n");
         return true;
@@ -204,7 +204,7 @@ bool CLIOptions::parse(int argc, char **argv)
 
     if (bShowHelp)
     {
-        printVersion(param, api);
+        //printVersion(param, api);
         showHelp(param);
     }
 
@@ -218,12 +218,12 @@ bool CLIOptions::parse(int argc, char **argv)
         switch (c)
         {
         case 'h':
-            printVersion(param, api);
+            //printVersion(param, api);
             showHelp(param);
             break;
 
         case 'V':
-            printVersion(param, api);
+            //printVersion(param, api);
             x265_report_simd(param);
             exit(0);
 
@@ -278,12 +278,12 @@ bool CLIOptions::parse(int argc, char **argv)
             OPT("fullhelp")
             {
                 param->logLevel = X265_LOG_FULL;
-                printVersion(param, api);
+                //printVersion(param, api);
                 showHelp(param);
                 break;
             }
             else
-                bError |= !!api->param_parse(param, long_options[long_options_index].name, optarg);
+                bError |= !!x265_param_parse(param, long_options[long_options_index].name, optarg);
             if (bError)
             {
                 const char *name = long_options_index > 0 ? long_options[long_options_index].name : argv[optind - 2];
@@ -304,8 +304,9 @@ bool CLIOptions::parse(int argc, char **argv)
 
     if (argc <= 1)
     {
-        api->param_default(param);
-        printVersion(param, api);
+        //api->param_default(param);
+        x265_param_default(param);
+        //printVersion(param, api);
         showHelp(param);
     }
 
@@ -315,11 +316,11 @@ bool CLIOptions::parse(int argc, char **argv)
         return true;
     }
 
-    if (param->internalBitDepth != api->bit_depth)
-    {
-        x265_log(param, X265_LOG_ERROR, "Only bit depths of %d are supported in this build\n", api->bit_depth);
-        return true;
-    }
+    //if (param->internalBitDepth != api->bit_depth)
+    //{
+    //    x265_log(param, X265_LOG_ERROR, "Only bit depths of %d are supported in this build\n", api->bit_depth);
+    //    return true;
+    //}
 
     InputFileInfo info;
     info.filename = inputfn;
@@ -370,7 +371,7 @@ bool CLIOptions::parse(int argc, char **argv)
     info.timebaseNum = param->fpsDenom;
     info.timebaseDenom = param->fpsNum;
 
-    if (api->param_apply_profile(param, profile))
+    if (x265_param_apply_profile(param, profile))
         return true;
 
     if (param->logLevel >= X265_LOG_INFO)
@@ -517,13 +518,13 @@ int main(int argc, char **argv)
     if (cliopt.parse(argc, argv)) //解析命令行参数
     {
         cliopt.destroy();
-        if (cliopt.api)
-            cliopt.api->param_free(cliopt.param);
+        if (cliopt.param)
+            x265_param_free(cliopt.param);
         exit(1);
     }
 
     x265_param* param = cliopt.param;
-    const x265_api* api = cliopt.api;
+    //const x265_api* api = cliopt.api;
 #if ENABLE_LIBVMAF
     x265_vmaf_data* vmafdata = cliopt.vmafData;
 #endif
@@ -533,18 +534,18 @@ int main(int argc, char **argv)
     * the profile found during option parsing, but it must be done before
     * opening an encoder */
 
-    x265_encoder *encoder = api->encoder_open(param);
+    x265_encoder *encoder = x265_encoder_open(param);
     if (!encoder)
     {
         x265_log(param, X265_LOG_ERROR, "failed to open encoder\n");
         cliopt.destroy();
-        api->param_free(param);
-        api->cleanup();
+        x265_param_free(cliopt.param);
+        x265_cleanup();
         exit(2);
     }
 
     /* get the encoder parameters post-initialization */
-    api->encoder_parameters(encoder, param);
+    x265_encoder_parameters(encoder, param);
 
     /* Control-C handler */
     if (signal(SIGINT, sigint_handler) == SIG_ERR)
@@ -558,7 +559,7 @@ int main(int argc, char **argv)
     int16_t *errorBuf = NULL;
     int ret = 0;
 
-    api->picture_init(param, pic_in);
+    x265_picture_init(param, pic_in);
 
     if (cliopt.bDither)
     {
@@ -602,7 +603,7 @@ int main(int argc, char **argv)
         }
 
         //进行编码的入口函数，读入24帧后才开始编码
-        int numEncoded = api->encoder_encode(encoder, pic_in);
+        int numEncoded = x265_encoder_encode(encoder, pic_in);
         if (numEncoded < 0)
         {
             b_ctrl_c = 1;
@@ -618,7 +619,7 @@ int main(int argc, char **argv)
     /* Flush the encoder */
     while (!b_ctrl_c)
     {
-        int numEncoded = api->encoder_encode(encoder, pic_in);
+        int numEncoded = x265_encoder_encode(encoder, pic_in);
         if (numEncoded < 0)
         {
             ret = 4;
@@ -636,13 +637,13 @@ int main(int argc, char **argv)
     if (cliopt.bProgress)
         fprintf(stderr, "%*s\r", 80, " ");
 
-    api->encoder_close(encoder);
+    x265_encoder_close(encoder);
 
-    api->cleanup(); /* Free library singletons */
+    x265_cleanup(); /* Free library singletons */
 
     cliopt.destroy();
 
-    api->param_free(param);
+    x265_param_free(param);
 
     X265_FREE(errorBuf);
 
