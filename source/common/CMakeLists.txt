@@ -129,14 +129,12 @@ endif(WIN32)
 add_library(common OBJECT
     ${ASM_PRIMITIVES} ${VEC_PRIMITIVES} ${ALTIVEC_PRIMITIVES} ${WINXP}
     primitives.cpp primitives.h
-    pixel.cpp dct.cpp lowpassdct.cpp ipfilter.cpp intrapred.cpp loopfilter.cpp
+    pixel.cpp lowpassdct.cpp ipfilter.cpp intrapred.cpp loopfilter.cpp
     constants.cpp constants.h
     cpu.cpp cpu.h version.cpp
     threading.cpp threading.h
     threadpool.cpp threadpool.h
-    wavefront.h wavefront.cpp
     md5.cpp md5.h
-    bitstream.h bitstream.cpp
     yuv.cpp yuv.h
     shortyuv.cpp shortyuv.h
     picyuv.cpp picyuv.h
@@ -148,7 +146,4 @@ add_library(common OBJECT
     slice.cpp slice.h
     lowres.cpp lowres.h mv.h 
     piclist.cpp piclist.h
-    predict.cpp  predict.h
-    scalinglist.cpp scalinglist.h
-    quant.cpp quant.h contexts.h
-    deblock.cpp deblock.h)
+    scalinglist.cpp scalinglist.h)
