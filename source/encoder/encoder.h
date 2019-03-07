@@ -128,7 +128,7 @@ struct puOrientation
 
 class DPB;
 class Lookahead;
-class RateControl;
+//class RateControl;
 class ThreadPool;
 class FrameData;
 
@@ -168,7 +168,7 @@ public:
     FILE*              m_analysisFileOut;
     x265_param*        m_param;
     x265_param*        m_latestParam;     // Holds latest param during a reconfigure
-    RateControl*       m_rateControl;
+    //RateControl*       m_rateControl;
     Lookahead*         m_lookahead;
 
     bool               m_externalFlush;

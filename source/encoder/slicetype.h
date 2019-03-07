@@ -41,6 +41,17 @@ class Lookahead;
 #define LOWRES_COST_MASK  ((1 << 14) - 1) //最大的cost值
 #define LOWRES_COST_SHIFT 14 //移位个数 用于取当前cost是I P 还是B
 
+
+#define BASE_FRAME_DURATION 0.04
+
+/* Arbitrary limitations as a sanity check. */
+#define MAX_FRAME_DURATION 1.00
+#define MIN_FRAME_DURATION 0.01
+
+#define MIN_AMORTIZE_FRAME 10
+#define MIN_AMORTIZE_FRACTION 0.2
+#define CLIP_DURATION(f) x265_clip3(MIN_FRAME_DURATION, MAX_FRAME_DURATION, f)
+
 /* Thread local data for lookahead tasks */
 struct LookaheadTLD //只在Lookahead中应用 用于多线程数据存储
 {

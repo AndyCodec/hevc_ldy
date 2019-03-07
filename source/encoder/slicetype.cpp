@@ -32,7 +32,7 @@
 
 #include "slicetype.h"
 #include "motion.h"
-#include "ratecontrol.h"
+//#include "ratecontrol.h"
 
 #if DETAILED_CU_STATS
 #define ProfileLookaheadTime(elapsed, count) ScopedElapsedTime _scope(elapsed); count++

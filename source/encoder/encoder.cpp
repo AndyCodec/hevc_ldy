@@ -33,7 +33,7 @@
 #include "bitcost.h"
 #include "encoder.h"
 #include "slicetype.h"
-#include "ratecontrol.h"
+//#include "ratecontrol.h"
 #include "dpb.h"
 //#include "nal.h"
 //#include "entropy.h"
@@ -112,7 +112,7 @@ LookEncoder::LookEncoder()
     m_numLumaWPBiFrames = 0;
     m_numChromaWPBiFrames = 0;
     m_lookahead = NULL;
-    m_rateControl = NULL;
+    //m_rateControl = NULL;
     m_dpb = NULL;
     m_exportedPic = NULL;
     m_numDelayedPic = 0;
@@ -243,7 +243,7 @@ void LookEncoder::create()
             lookAheadThreadPool[i].start();
     m_lookahead->m_numPools = pools;
     m_dpb = new DPB(m_param);
-    m_rateControl = new RateControl(*m_param);
+    //m_rateControl = new RateControl(*m_param);
     initVPS(&m_vps);
     initSPS(&m_sps);
     initPPS(&m_pps);
@@ -327,11 +327,11 @@ void LookEncoder::create()
     //int numRows = (m_param->sourceHeight + m_param->maxCUSize - 1) / m_param->maxCUSize;
     //int numCols = (m_param->sourceWidth + m_param->maxCUSize - 1) / m_param->maxCUSize;
 
-    if (m_param->bEmitHRDSEI)
-        m_rateControl->initHRD(m_sps);
+    //if (m_param->bEmitHRDSEI)
+    //    m_rateControl->initHRD(m_sps);
 
-    if (!m_rateControl->init(m_sps))
-        m_aborted = true;
+    //if (!m_rateControl->init(m_sps))
+    //    m_aborted = true;
     if (!m_lookahead->create())//申请lookachead空间用于帧类型决策
         m_aborted = true;
 
@@ -421,8 +421,8 @@ void LookEncoder::create()
 
 void LookEncoder::stopJobs()
 {
-    if (m_rateControl)
-        m_rateControl->terminate(); // unblock all blocked RC calls
+    //if (m_rateControl)
+    //    m_rateControl->terminate(); // unblock all blocked RC calls
 
     if (m_lookahead)
         m_lookahead->stopJobs();//停止帧类型决策任务，等它完毕再停止
@@ -464,11 +464,11 @@ void LookEncoder::destroy()
     }
 
     delete m_dpb;
-    if (m_rateControl)
-    {
-        m_rateControl->destroy();
-        delete m_rateControl;
-    }
+    //if (m_rateControl)
+    //{
+    //    m_rateControl->destroy();
+    //    delete m_rateControl;
+    //}
 
     X265_FREE(m_offsetEmergency);
 
@@ -699,19 +699,19 @@ int LookEncoder::encode_lookahead(const x265_picture* pic_in)
         /* Encoder holds a reference count until stats collection is finished */
         ATOMIC_INC(&inFrame->m_countRefEncoders);
 
-        if ((m_param->rc.aqMode || m_param->bEnableWeightedPred || m_param->bEnableWeightedBiPred) &&
-            (m_param->rc.cuTree && m_param->rc.bStatRead))
-        {
-            if (!m_rateControl->cuTreeReadFor2Pass(inFrame))
-            {
-                m_aborted = 1;
-                return -1;
-            }
-        }
+        //if ((m_param->rc.aqMode || m_param->bEnableWeightedPred || m_param->bEnableWeightedBiPred) &&
+        //    (m_param->rc.cuTree && m_param->rc.bStatRead))
+        //{
+        //    if (!m_rateControl->cuTreeReadFor2Pass(inFrame))
+        //    {
+        //        m_aborted = 1;
+        //        return -1;
+        //    }
+        //}
 
         /* Use the frame types from the first pass, if available */
-        int sliceType = (m_param->rc.bStatRead) ? m_rateControl->rateControlSliceType(inFrame->m_poc) : pic_in->sliceType;
-        m_lookahead->addPicture(*inFrame, sliceType);//将inFrame放入m_inputQueue中，满足条件时会唤醒工作线程
+        //int sliceType = (m_param->rc.bStatRead) ? m_rateControl->rateControlSliceType(inFrame->m_poc) : pic_in->sliceType;
+        m_lookahead->addPicture(*inFrame, pic_in->sliceType);//将inFrame放入m_inputQueue中，满足条件时会唤醒工作线程
 
         m_numDelayedPic++;
     }
@@ -778,13 +778,13 @@ void LookEncoder::printSummary()
 
         x265_log(m_param, X265_LOG_INFO, "lossless compression ratio %.2f::1\n", uncompressed / m_analyzeAll.m_accBits);
     }
-    if (m_param->bMultiPassOptRPS && m_param->rc.bStatRead)
-    {
-        x265_log(m_param, X265_LOG_INFO, "RPS in SPS: %d frames (%.2f%%), RPS not in SPS: %d frames (%.2f%%)\n",
-            m_rpsInSpsCount, (float)100.0 * m_rpsInSpsCount / m_rateControl->m_numEntries,
-            m_rateControl->m_numEntries - m_rpsInSpsCount,
-            (float)100.0 * (m_rateControl->m_numEntries - m_rpsInSpsCount) / m_rateControl->m_numEntries);
-    }
+    //if (m_param->bMultiPassOptRPS && m_param->rc.bStatRead)
+    //{
+    //    x265_log(m_param, X265_LOG_INFO, "RPS in SPS: %d frames (%.2f%%), RPS not in SPS: %d frames (%.2f%%)\n",
+    //        m_rpsInSpsCount, (float)100.0 * m_rpsInSpsCount / m_rateControl->m_numEntries,
+    //        m_rateControl->m_numEntries - m_rpsInSpsCount,
+    //        (float)100.0 * (m_rateControl->m_numEntries - m_rpsInSpsCount) / m_rateControl->m_numEntries);
+    //}
 
     if (m_analyzeAll.m_numPics)
     {

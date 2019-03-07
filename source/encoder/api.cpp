@@ -22,11 +22,10 @@
  *****************************************************************************/
 
 #include "common.h"
-#include "bitstream.h"
+//#include "bitstream.h"
 #include "param.h"
 
 #include "encoder.h"
-//#include "entropy.h"
 #include "level.h"
 #include "bitcost.h"
 
