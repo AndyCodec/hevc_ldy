@@ -63,13 +63,13 @@ void setupLowPassPrimitives_c(EncoderPrimitives& p);
 void setupCPrimitives(EncoderPrimitives &p)
 {
     setupPixelPrimitives_c(p);      // pixel.cpp
-    setupDCTPrimitives_c(p);        // dct.cpp
+    //setupDCTPrimitives_c(p);        // dct.cpp
     setupLowPassPrimitives_c(p);    // lowpassdct.cpp
     setupFilterPrimitives_c(p);     // ipfilter.cpp
     setupIntraPrimitives_c(p);      // intrapred.cpp
-    setupLoopFilterPrimitives_c(p); // loopfilter.cpp
-    setupSaoPrimitives_c(p);        // sao.cpp
-    setupSeaIntegralPrimitives_c(p);  // framefilter.cpp
+    //setupLoopFilterPrimitives_c(p); // loopfilter.cpp
+    //setupSaoPrimitives_c(p);        // sao.cpp
+    //setupSeaIntegralPrimitives_c(p);  // framefilter.cpp
 }
 
 void enableLowpassDCTPrimitives(EncoderPrimitives &p)
