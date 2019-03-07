@@ -34,28 +34,6 @@
 #include "libvmaf.h"
 #endif
 
-/* multilib namespace reflectors */
-#if LINKED_8BIT
-namespace x265_8bit {
-const x265_api* x265_api_get(int bitDepth);
-const x265_api* x265_api_query(int bitDepth, int apiVersion, int* err);
-}
-#endif
-
-#if LINKED_10BIT
-namespace x265_10bit {
-const x265_api* x265_api_get(int bitDepth);
-const x265_api* x265_api_query(int bitDepth, int apiVersion, int* err);
-}
-#endif
-
-#if LINKED_12BIT
-namespace x265_12bit {
-const x265_api* x265_api_get(int bitDepth);
-const x265_api* x265_api_query(int bitDepth, int apiVersion, int* err);
-}
-#endif
-
 #if EXPORT_C_API
 /* these functions are exported as C functions (default) */
 using namespace X265_NS;
@@ -252,50 +230,6 @@ void x265_picture_free(x265_picture *p)
     return x265_free(p);
 }
 
-static const x265_api libapi =
-{
-    X265_MAJOR_VERSION,
-    X265_BUILD,
-    sizeof(x265_param),
-    sizeof(x265_picture),
-    sizeof(x265_analysis_data),
-    sizeof(x265_zone),
-    sizeof(x265_stats),
-
-    PFX(max_bit_depth),
-    PFX(version_str),
-    PFX(build_info_str),
-
-    &PARAM_NS::x265_param_alloc,
-    &PARAM_NS::x265_param_free,
-    &PARAM_NS::x265_param_default,
-    &PARAM_NS::x265_param_parse,
-    &PARAM_NS::x265_param_apply_profile,
-    &PARAM_NS::x265_param_default_preset,
-    &x265_picture_alloc,
-    &x265_picture_free,
-    &x265_picture_init,
-    &x265_encoder_open,
-    &x265_encoder_parameters,
-    &x265_encoder_encode,
-    &x265_encoder_close,
-    &x265_cleanup,
-
-    sizeof(x265_frame_stats),
-    &x265_csvlog_open,
-    &x265_csvlog_frame,
-    &x265_csvlog_encode,
-    &x265_dither_image,
-#if ENABLE_LIBVMAF
-    &x265_calculate_vmafscore,
-    &x265_calculate_vmaf_framelevelscore,
-#endif
-
-};
-
-typedef const x265_api* (*api_get_func)(int bitDepth);
-typedef const x265_api* (*api_query_func)(int bitDepth, int apiVersion, int* err);
-
 #define xstr(s) str(s)
 #define str(s) #s
 
@@ -310,180 +244,6 @@ typedef const x265_api* (*api_query_func)(int bitDepth, int apiVersion, int* err
 #endif
 
 static int g_recursion /* = 0 */;
-
-const x265_api* x265_api_get(int bitDepth)
-{
-    if (bitDepth && bitDepth != X265_DEPTH)
-    {
-#if LINKED_8BIT
-        if (bitDepth == 8) return x265_8bit::x265_api_get(0);
-#endif
-#if LINKED_10BIT
-        if (bitDepth == 10) return x265_10bit::x265_api_get(0);
-#endif
-#if LINKED_12BIT
-        if (bitDepth == 12) return x265_12bit::x265_api_get(0);
-#endif
-
-        const char* libname = NULL;
-        const char* method = "x265_api_get_" xstr(X265_BUILD);
-        const char* multilibname = "libx265" ext;
-
-        if (bitDepth == 12)
-            libname = "libx265_main12" ext;
-        else if (bitDepth == 10)
-            libname = "libx265_main10" ext;
-        else if (bitDepth == 8)
-            libname = "libx265_main" ext;
-        else
-            return NULL;
-
-        const x265_api* api = NULL;
-        int reqDepth = 0;
-
-        if (g_recursion > 1)
-            return NULL;
-        else
-            g_recursion++;
-
-#if _WIN32
-        HMODULE h = LoadLibraryA(libname);
-        if (!h)
-        {
-            h = LoadLibraryA(multilibname);
-            reqDepth = bitDepth;
-        }
-        if (h)
-        {
-            api_get_func get = (api_get_func)GetProcAddress(h, method);
-            if (get)
-                api = get(reqDepth);
-        }
-#else
-        void* h = dlopen(libname, RTLD_LAZY | RTLD_LOCAL);
-        if (!h)
-        {
-            h = dlopen(multilibname, RTLD_LAZY | RTLD_LOCAL);
-            reqDepth = bitDepth;
-        }
-        if (h)
-        {
-            api_get_func get = (api_get_func)dlsym(h, method);
-            if (get)
-                api = get(reqDepth);
-        }
-#endif
-
-        g_recursion--;
-
-        if (api && bitDepth != api->bit_depth)
-        {
-            x265_log(NULL, X265_LOG_WARNING, "%s does not support requested bitDepth %d\n", libname, bitDepth);
-            return NULL;
-        }
-
-        return api;
-    }
-
-    return &libapi;
-}
-
-const x265_api* x265_api_query(int bitDepth, int apiVersion, int* err)
-{
-    if (apiVersion < 51)
-    {
-        /* builds before 1.6 had re-ordered public structs */
-        if (err) *err = X265_API_QUERY_ERR_VER_REFUSED;
-        return NULL;
-    }
-
-    if (err) *err = X265_API_QUERY_ERR_NONE;
-
-    if (bitDepth && bitDepth != X265_DEPTH)
-    {
-#if LINKED_8BIT
-        if (bitDepth == 8) return x265_8bit::x265_api_query(0, apiVersion, err);
-#endif
-#if LINKED_10BIT
-        if (bitDepth == 10) return x265_10bit::x265_api_query(0, apiVersion, err);
-#endif
-#if LINKED_12BIT
-        if (bitDepth == 12) return x265_12bit::x265_api_query(0, apiVersion, err);
-#endif
-
-        const char* libname = NULL;
-        const char* method = "x265_api_query";
-        const char* multilibname = "libx265" ext;
-
-        if (bitDepth == 12)
-            libname = "libx265_main12" ext;
-        else if (bitDepth == 10)
-            libname = "libx265_main10" ext;
-        else if (bitDepth == 8)
-            libname = "libx265_main" ext;
-        else
-        {
-            if (err) *err = X265_API_QUERY_ERR_LIB_NOT_FOUND;
-            return NULL;
-        }
-
-        const x265_api* api = NULL;
-        int reqDepth = 0;
-        int e = X265_API_QUERY_ERR_LIB_NOT_FOUND;
-
-        if (g_recursion > 1)
-        {
-            if (err) *err = X265_API_QUERY_ERR_LIB_NOT_FOUND;
-            return NULL;
-        }
-        else
-            g_recursion++;
-
-#if _WIN32
-        HMODULE h = LoadLibraryA(libname);
-        if (!h)
-        {
-            h = LoadLibraryA(multilibname);
-            reqDepth = bitDepth;
-        }
-        if (h)
-        {
-            e = X265_API_QUERY_ERR_FUNC_NOT_FOUND;
-            api_query_func query = (api_query_func)GetProcAddress(h, method);
-            if (query)
-                api = query(reqDepth, apiVersion, err);
-        }
-#else
-        void* h = dlopen(libname, RTLD_LAZY | RTLD_LOCAL);
-        if (!h)
-        {
-            h = dlopen(multilibname, RTLD_LAZY | RTLD_LOCAL);
-            reqDepth = bitDepth;
-        }
-        if (h)
-        {
-            e = X265_API_QUERY_ERR_FUNC_NOT_FOUND;
-            api_query_func query = (api_query_func)dlsym(h, method);
-            if (query)
-                api = query(reqDepth, apiVersion, err);
-        }
-#endif
-
-        g_recursion--;
-
-        if (api && bitDepth != api->bit_depth)
-        {
-            x265_log(NULL, X265_LOG_WARNING, "%s does not support requested bitDepth %d\n", libname, bitDepth);
-            if (err) *err = X265_API_QUERY_ERR_WRONG_BITDEPTH;
-            return NULL;
-        }
-
-        if (err) *err = api ? X265_API_QUERY_ERR_NONE : e;
-        return api;
-    }
-
-    return &libapi;
-}
 
 FILE* x265_csvlog_open(const x265_param* param)
 {
@@ -719,8 +479,6 @@ void x265_csvlog_encode(const x265_param *p, const x265_stats *stats, int padx, 
 {
     if (p && p->csvfpt)
     {
-        const x265_api * api = x265_api_get(0);
-
         if (p->csvLogLevel)
         {
             // adding summary to a per-frame csv log file, so it needs a summary header
@@ -829,7 +587,6 @@ void x265_csvlog_encode(const x265_param *p, const x265_stats *stats, int padx, 
 #if ENABLE_LIBVMAF
         fprintf(p->csvfpt, " %lf,", stats->aggregateVmafScore);
 #endif
-        fprintf(p->csvfpt, " %s\n", api->version_str);
 
     }
 }
@@ -878,13 +635,6 @@ static void ditherPlane(uint16_t *src, int srcStride, int width, int height, int
 
 void x265_dither_image(x265_picture* picIn, int picWidth, int picHeight, int16_t *errorBuf, int bitDepth)
 {
-    const x265_api* api = x265_api_get(0);
-
-    if (sizeof(x265_picture) != api->sizeof_picture)
-    {
-        fprintf(stderr, "extras [error]: structure size skew, unable to dither\n");
-        return;
-    }
 
     if (picIn->bitDepth <= 8)
     {

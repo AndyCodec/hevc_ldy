@@ -68,7 +68,6 @@ struct CLIOptions
 {
     InputFile* input;
     FILE*       qpfile;
-    //const x265_api* api;
     x265_param* param;
     x265_vmaf_data* vmafData;
     bool bProgress;
@@ -87,7 +86,6 @@ struct CLIOptions
     {
         input = NULL;
         qpfile = NULL;
-        //api = NULL;
         param = NULL;
         vmafData = NULL;
         framesToBeEncoded = seek = 0;
@@ -174,13 +172,6 @@ bool CLIOptions::parse(int argc, char **argv)
             bShowHelp = true;
     }
 
-    //api = x265_api_get(8);
-    //if (!api)
-    //{
-    //    x265_log(NULL, X265_LOG_WARNING, "falling back to default bit-depth\n");
-    //    api = x265_api_get(0);
-    //}
-
     param = x265_param_alloc();
     if (!param)
     {
@@ -204,7 +195,6 @@ bool CLIOptions::parse(int argc, char **argv)
 
     if (bShowHelp)
     {
-        //printVersion(param, api);
         showHelp(param);
     }
 
@@ -218,12 +208,10 @@ bool CLIOptions::parse(int argc, char **argv)
         switch (c)
         {
         case 'h':
-            //printVersion(param, api);
             showHelp(param);
             break;
 
         case 'V':
-            //printVersion(param, api);
             x265_report_simd(param);
             exit(0);
 
@@ -278,7 +266,6 @@ bool CLIOptions::parse(int argc, char **argv)
             OPT("fullhelp")
             {
                 param->logLevel = X265_LOG_FULL;
-                //printVersion(param, api);
                 showHelp(param);
                 break;
             }
@@ -304,9 +291,7 @@ bool CLIOptions::parse(int argc, char **argv)
 
     if (argc <= 1)
     {
-        //api->param_default(param);
         x265_param_default(param);
-        //printVersion(param, api);
         showHelp(param);
     }
 
@@ -315,12 +300,6 @@ bool CLIOptions::parse(int argc, char **argv)
         x265_log(param, X265_LOG_ERROR, "input or output file not specified, try --help for help\n");
         return true;
     }
-
-    //if (param->internalBitDepth != api->bit_depth)
-    //{
-    //    x265_log(param, X265_LOG_ERROR, "Only bit depths of %d are supported in this build\n", api->bit_depth);
-    //    return true;
-    //}
 
     InputFileInfo info;
     info.filename = inputfn;
@@ -524,7 +503,6 @@ int main(int argc, char **argv)
     }
 
     x265_param* param = cliopt.param;
-    //const x265_api* api = cliopt.api;
 #if ENABLE_LIBVMAF
     x265_vmaf_data* vmafdata = cliopt.vmafData;
 #endif
