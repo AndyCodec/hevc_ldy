@@ -85,13 +85,9 @@ LookEncoder::LookEncoder()
     m_latestParam = NULL;
     m_threadPool = NULL;
     m_offsetEmergency = NULL;
-    m_cB = 1.0;
-    m_cR = 1.0;
     MotionEstimate::initScales();
 
     m_prevTonemapPayload.payload = NULL;
-    m_startPoint = 0;
-    m_saveCTUSize = 0;
 }
 
 void LookEncoder::create()
@@ -259,13 +255,9 @@ void LookEncoder::create()
     if (!m_lookahead->create())//申请lookachead空间用于帧类型决策
         m_aborted = true;
 
-    initRefIdx();
-    m_bZeroLatency = !m_param->bframes && !m_param->lookaheadDepth && m_param->frameNumThreads == 1 && m_param->maxSlices == 1;
     m_aborted |= parseLambdaFile(m_param);
 
     m_encodeStartTime = x265_mdate();
-
-    m_emitCLLSEI = p->maxCLL || p->maxFALL;
 
     if (m_param->bDynamicRefine)
     {
@@ -548,19 +540,6 @@ void LookEncoder::printSummary()
 
     general_log(m_param, NULL, X265_LOG_INFO, "\nencoded 0 frames\n");
 
-}
-
-void LookEncoder::initRefIdx()
-{
-    int j = 0;
-
-    for (j = 0; j < MAX_NUM_REF_IDX; j++)
-    {
-        m_refIdxLastGOP.numRefIdxl0[j] = 0;
-        m_refIdxLastGOP.numRefIdxl1[j] = 0;
-    }
-
-    return;
 }
 
 void LookEncoder::initVPS(VPS *vps)

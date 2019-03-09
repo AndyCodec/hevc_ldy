@@ -129,26 +129,9 @@ public:
     ScalingList        m_scalingList;      // quantization matrix information
     Window             m_conformanceWindow;
 
-    bool               m_emitCLLSEI;
-    bool               m_bZeroLatency;     // x265_encoder_encode() returns NALs for the input picture, zero lag
     bool               m_aborted;          // fatal error detected
     bool               m_reconfigure;      // Encoder reconfigure in progress
     bool               m_reconfigureRc;
-
-    /* Begin intra refresh when one not in progress or else begin one as soon as the current
-    * one is done. Requires bIntraRefresh to be set.*/
-    int                m_bQueuedIntraRefresh;
-
-    /* For optimising slice QP */
-    Lock               m_sliceQpLock;
-    int64_t            m_iBitsCostSum[QP_MAX_MAX + 1];
-    Lock               m_sliceRefIdxLock;
-    RefIdxLastGOP      m_refIdxLastGOP;
-
-    Lock               m_rpsInSpsLock;
-    /* For HDR*/
-    double                m_cB;
-    double                m_cR;
 
     int                     m_bToneMap; // Enables tone-mapping
 
@@ -158,10 +141,6 @@ public:
     uint64_t*               m_rdCost;
     uint64_t*               m_variance;
     uint32_t*               m_trainingCount;
-    int32_t                 m_startPoint;
-    Lock                    m_dynamicRefineLock;
-
-    bool                    m_saveCTUSize;
 
     LookEncoder();
     ~LookEncoder()
@@ -177,7 +156,6 @@ public:
     void printSummary();
 
     void configure(x265_param *param);
-    void initRefIdx();
 
 protected:
 
