@@ -30,46 +30,13 @@
 #include "scalinglist.h"
 #include "x265.h"
 #include "framedata.h"
-#ifdef ENABLE_HDR10_PLUS
-    #include "dynamicHDR10/hdr10plus.h"
-#endif
+
 struct x265_encoder {};
 namespace X265_NS {
 // private namespace
 extern const char g_sliceTypeToChar[3];
 
 class Entropy;
-
-struct EncStats
-{
-    double        m_psnrSumY;
-    double        m_psnrSumU;
-    double        m_psnrSumV;
-    double        m_globalSsim;
-    double        m_totalQp;
-    double        m_maxFALL;
-    uint64_t      m_accBits;
-    uint32_t      m_numPics;
-    uint16_t      m_maxCLL;
-
-    EncStats()
-    {
-        m_psnrSumY = m_psnrSumU = m_psnrSumV = m_globalSsim = 0;
-        m_accBits = 0;
-        m_numPics = 0;
-        m_totalQp = 0;
-        m_maxCLL = 0;
-        m_maxFALL = 0;
-    }
-
-    void addQP(double aveQp);
-
-    void addPsnr(double psnrY, double psnrU, double psnrV);
-
-    void addBits(uint64_t bits);
-
-    void addSsim(double ssim);
-};
 
 #define MAX_NUM_REF_IDX 64
 
@@ -135,44 +102,27 @@ class LookEncoder : public x265_encoder
 {
 public:
 
-    uint32_t           m_residualSumEmergency[MAX_NUM_TR_CATEGORIES][MAX_NUM_TR_COEFFS];
-    uint32_t           m_countEmergency[MAX_NUM_TR_CATEGORIES];
-    uint16_t(*m_offsetEmergency)[MAX_NUM_TR_CATEGORIES][MAX_NUM_TR_COEFFS];
+    uint16_t           (*m_offsetEmergency)[MAX_NUM_TR_CATEGORIES][MAX_NUM_TR_COEFFS];
 
     int64_t            m_firstPts;
     int64_t            m_bframeDelayTime;
-    int64_t            m_prevReorderedPts[2];
     int64_t            m_encodeStartTime;
 
     int                m_pocLast;         // time index (POC)
-    int                m_encodedFrameNum;
-    int                m_outputCount;
     int                m_bframeDelay;
     int                m_numPools;
-    int                m_curEncoder;
 
     // weighted prediction
-    int                m_numLumaWPFrames;    // number of P frames with weighted luma reference
-    int                m_numChromaWPFrames;  // number of P frames with weighted chroma reference
-    int                m_numLumaWPBiFrames;  // number of B frames with weighted luma reference
-    int                m_numChromaWPBiFrames; // number of B frames with weighted chroma reference
-    int                m_conformanceMode;
-    int                m_lastBPSEI;
     uint32_t           m_numDelayedPic;
 
     ThreadPool*        m_threadPool;
     DPB*               m_dpb;
-    Frame*             m_exportedPic;
     x265_param*        m_param;
     x265_param*        m_latestParam;     // Holds latest param during a reconfigure
     Lookahead*         m_lookahead;
 
     bool               m_externalFlush;
-    /* Collect statistics globally */
-    EncStats           m_analyzeAll;
-    EncStats           m_analyzeI;
-    EncStats           m_analyzeP;
-    EncStats           m_analyzeB;
+
     VPS                m_vps;
     SPS                m_sps;
     PPS                m_pps;
@@ -191,25 +141,16 @@ public:
 
     /* For optimising slice QP */
     Lock               m_sliceQpLock;
-    int                m_iFrameNum;
-    int                m_iPPSQpMinus26;
     int64_t            m_iBitsCostSum[QP_MAX_MAX + 1];
     Lock               m_sliceRefIdxLock;
     RefIdxLastGOP      m_refIdxLastGOP;
 
     Lock               m_rpsInSpsLock;
-    int                m_rpsInSpsCount;
     /* For HDR*/
     double                m_cB;
     double                m_cR;
 
     int                     m_bToneMap; // Enables tone-mapping
-
-#ifdef ENABLE_HDR10_PLUS
-    const hdr10plus_api     *m_hdr10plus_api;
-    uint8_t                 **m_cim;
-    int                     m_numCimInfo;
-#endif
 
     x265_sei_payload        m_prevTonemapPayload;
 
@@ -225,10 +166,6 @@ public:
     LookEncoder();
     ~LookEncoder()
     {
-#ifdef ENABLE_HDR10_PLUS
-        if (m_prevTonemapPayload.payload != NULL)
-            X265_FREE(m_prevTonemapPayload.payload);
-#endif
     };
 
     void create();
@@ -240,7 +177,6 @@ public:
     void printSummary();
 
     void configure(x265_param *param);
-    char* statsString(EncStats& stat, char* buffer);
     void initRefIdx();
 
 protected:
