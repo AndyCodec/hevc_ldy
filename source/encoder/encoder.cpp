@@ -109,7 +109,6 @@ LookEncoder::LookEncoder()
     m_numLumaWPBiFrames = 0;
     m_numChromaWPBiFrames = 0;
     m_lookahead = NULL;
-    //m_rateControl = NULL;
     m_dpb = NULL;
     m_exportedPic = NULL;
     m_numDelayedPic = 0;
@@ -117,8 +116,6 @@ LookEncoder::LookEncoder()
     m_param = NULL;
     m_latestParam = NULL;
     m_threadPool = NULL;
-    m_analysisFileIn = NULL;
-    m_analysisFileOut = NULL;
     m_offsetEmergency = NULL;
     m_iFrameNum = 0;
     m_iPPSQpMinus26 = 0;
@@ -333,63 +330,6 @@ void LookEncoder::create()
         m_aborted = true;
 
     initRefIdx();
-    if (m_param->analysisSave && m_param->bUseAnalysisFile)
-    {
-        char* temp = strcatFilename(m_param->analysisSave, ".temp");
-        if (!temp)
-            m_aborted = true;
-        else
-        {
-            m_analysisFileOut = x265_fopen(temp, "wb");
-            X265_FREE(temp);
-        }
-        if (!m_analysisFileOut)
-        {
-            x265_log_file(NULL, X265_LOG_ERROR, "Analysis save: failed to open file %s.temp\n", m_param->analysisSave);
-            m_aborted = true;
-        }
-    }
-    if (m_param->analysisLoad && m_param->bUseAnalysisFile)
-    {
-        m_analysisFileIn = x265_fopen(m_param->analysisLoad, "rb");
-        if (!m_analysisFileIn)
-        {
-            x265_log_file(NULL, X265_LOG_ERROR, "Analysis load: failed to open file %s\n", m_param->analysisLoad);
-            m_aborted = true;
-        }
-    }
-
-    if (m_param->analysisMultiPassRefine || m_param->analysisMultiPassDistortion)
-    {
-        const char* name = m_param->analysisReuseFileName;
-        if (!name)
-            name = defaultAnalysisFileName;
-        if (m_param->rc.bStatWrite)
-        {
-            char* temp = strcatFilename(name, ".temp");
-            if (!temp)
-                m_aborted = true;
-            else
-            {
-                m_analysisFileOut = x265_fopen(temp, "wb");
-                X265_FREE(temp);
-            }
-            if (!m_analysisFileOut)
-            {
-                x265_log_file(NULL, X265_LOG_ERROR, "Analysis 2 pass: failed to open file %s.temp\n", name);
-                m_aborted = true;
-            }
-        }
-        if (m_param->rc.bStatRead)
-        {
-            m_analysisFileIn = x265_fopen(name, "rb");
-            if (!m_analysisFileIn)
-            {
-                x265_log_file(NULL, X265_LOG_ERROR, "Analysis 2 pass: failed to open file %s\n", name);
-                m_aborted = true;
-            }
-        }
-    }
     m_bZeroLatency = !m_param->bframes && !m_param->lookaheadDepth && m_param->frameNumThreads == 1 && m_param->maxSlices == 1;
     m_aborted |= parseLambdaFile(m_param);
 
@@ -461,11 +401,6 @@ void LookEncoder::destroy()
     }
 
     delete m_dpb;
-    //if (m_rateControl)
-    //{
-    //    m_rateControl->destroy();
-    //    delete m_rateControl;
-    //}
 
     X265_FREE(m_offsetEmergency);
 
@@ -476,28 +411,7 @@ void LookEncoder::destroy()
 
         PARAM_NS::x265_param_free(m_latestParam);
     }
-    if (m_analysisFileIn)
-        fclose(m_analysisFileIn);
 
-    if (m_analysisFileOut)
-    {
-        int bError = 1;
-        fclose(m_analysisFileOut);
-        const char* name = m_param->analysisSave ? m_param->analysisSave : m_param->analysisReuseFileName;
-        if (!name)
-            name = defaultAnalysisFileName;
-        char* temp = strcatFilename(name, ".temp");
-        if (temp)
-        {
-            x265_unlink(name);
-            bError = x265_rename(temp, name);
-        }
-        if (bError)
-        {
-            x265_log_file(m_param, X265_LOG_ERROR, "failed to rename analysis stats file to \"%s\"\n", name);
-        }
-        X265_FREE(temp);
-    }
     if (m_param)
     {
         if (m_param->csvfpt)
@@ -579,7 +493,7 @@ int LookEncoder::encode_lookahead(const x265_picture* pic_in)
             if (inFrame->create(p, pic_in->quantOffsets))//申请frame空间
             {
                 static int count = 0;
-                printf("m_dpb->m_freeList.empty()--count = %d-\n", count++);
+                //printf("m_dpb->m_freeList.empty()--count = %d-\n", count++);
                 /* the first PicYuv created is asked to generate the CU and block unit offset
                 * arrays which are then shared with all subsequent PicYuv (orig and recon)
                 * allocated by this top level encoder */
@@ -696,18 +610,6 @@ int LookEncoder::encode_lookahead(const x265_picture* pic_in)
         /* Encoder holds a reference count until stats collection is finished */
         ATOMIC_INC(&inFrame->m_countRefEncoders);
 
-        //if ((m_param->rc.aqMode || m_param->bEnableWeightedPred || m_param->bEnableWeightedBiPred) &&
-        //    (m_param->rc.cuTree && m_param->rc.bStatRead))
-        //{
-        //    if (!m_rateControl->cuTreeReadFor2Pass(inFrame))
-        //    {
-        //        m_aborted = 1;
-        //        return -1;
-        //    }
-        //}
-
-        /* Use the frame types from the first pass, if available */
-        //int sliceType = (m_param->rc.bStatRead) ? m_rateControl->rateControlSliceType(inFrame->m_poc) : pic_in->sliceType;
         m_lookahead->addPicture(*inFrame, pic_in->sliceType);//将inFrame放入m_inputQueue中，满足条件时会唤醒工作线程
 
         m_numDelayedPic++;
@@ -726,13 +628,11 @@ int LookEncoder::encode_lookahead(const x265_picture* pic_in)
         frameLookahead->m_lowres.getData();
         ret = 2;
     }
-    //printf("encoder_encode: ret = %d-\n", ret);
     return ret;
 }
 
 void LookEncoder::printSummary()
 {
-    printf("printSummary \n");
     if (m_param->logLevel < X265_LOG_INFO)
         return;
 
@@ -775,13 +675,6 @@ void LookEncoder::printSummary()
 
         x265_log(m_param, X265_LOG_INFO, "lossless compression ratio %.2f::1\n", uncompressed / m_analyzeAll.m_accBits);
     }
-    //if (m_param->bMultiPassOptRPS && m_param->rc.bStatRead)
-    //{
-    //    x265_log(m_param, X265_LOG_INFO, "RPS in SPS: %d frames (%.2f%%), RPS not in SPS: %d frames (%.2f%%)\n",
-    //        m_rpsInSpsCount, (float)100.0 * m_rpsInSpsCount / m_rateControl->m_numEntries,
-    //        m_rateControl->m_numEntries - m_rpsInSpsCount,
-    //        (float)100.0 * (m_rateControl->m_numEntries - m_rpsInSpsCount) / m_rateControl->m_numEntries);
-    //}
 
     if (m_analyzeAll.m_numPics)
     {

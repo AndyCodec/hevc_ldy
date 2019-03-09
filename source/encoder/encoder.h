@@ -128,7 +128,6 @@ struct puOrientation
 
 class DPB;
 class Lookahead;
-//class RateControl;
 class ThreadPool;
 class FrameData;
 
@@ -164,11 +163,8 @@ public:
     ThreadPool*        m_threadPool;
     DPB*               m_dpb;
     Frame*             m_exportedPic;
-    FILE*              m_analysisFileIn;
-    FILE*              m_analysisFileOut;
     x265_param*        m_param;
     x265_param*        m_latestParam;     // Holds latest param during a reconfigure
-    //RateControl*       m_rateControl;
     Lookahead*         m_lookahead;
 
     bool               m_externalFlush;
@@ -180,7 +176,6 @@ public:
     VPS                m_vps;
     SPS                m_sps;
     PPS                m_pps;
-    //NALList            m_nalList;
     ScalingList        m_scalingList;      // quantization matrix information
     Window             m_conformanceWindow;
 
@@ -240,7 +235,6 @@ public:
     void stopJobs();
     void destroy();
 
-    //int encode(const x265_picture* pic, x265_picture *pic_out);
     int encode_lookahead(const x265_picture* pic);
 
     void printSummary();
