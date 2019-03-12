@@ -153,10 +153,8 @@ int x265_encoder_encode(x265_encoder *enc, x265_picture *pic_in)
         numEncoded = encoder->encode_lookahead(pic_in);
         static_count++;
         encoder_count++;
-        //printf("static_count, encoder_count, numEncoder = %d, %d, %d-\n", static_count, encoder_count, numEncoded);
         if (encoder_count > 1)
             break;
-
     }
     while ((numEncoded == 0 && !pic_in && encoder->m_numDelayedPic && !encoder->m_latestParam->forceFlush) && !encoder->m_externalFlush);
 

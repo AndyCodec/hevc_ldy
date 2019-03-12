@@ -171,7 +171,7 @@ void LookEncoder::create()
             lookAheadThreadPool[i].start();
     m_lookahead->m_numPools = pools;
     m_dpb = new DPB(m_param);
-    //m_rateControl = new RateControl(*m_param);
+    
     initVPS(&m_vps);
     initSPS(&m_sps);
     initPPS(&m_pps);
@@ -274,9 +274,6 @@ void LookEncoder::create()
 
 void LookEncoder::stopJobs()
 {
-    //if (m_rateControl)
-    //    m_rateControl->terminate(); // unblock all blocked RC calls
-
     if (m_lookahead)
         m_lookahead->stopJobs();//停止帧类型决策任务，等它完毕再停止
 
@@ -515,6 +512,7 @@ int LookEncoder::encode_lookahead(const x265_picture* pic_in)
     {
         frameLookahead->m_lowres.getData();
         ret = 2;
+        m_dpb->recycleLookahead(frameLookahead);
     }
     return ret;
 }
@@ -1214,12 +1212,7 @@ void LookEncoder::configure(x265_param *p)
         p->maxSlices = 1;
     }
     const uint32_t numRows = (p->sourceHeight + p->maxCUSize - 1) / p->maxCUSize;
-    //const uint32_t slicesLimit = X265_MIN(numRows, NALList::MAX_NAL_UNITS - 1);
-    //if (p->maxSlices > slicesLimit)
-    //{
-    //    x265_log(p, X265_LOG_WARNING, "maxSlices can not be more than min(rows, MAX_NAL_UNITS-1), force set to %d\n", slicesLimit);
-    //    p->maxSlices = slicesLimit;
-    //}
+
     if (p->bHDROpt)
     {
         if (p->internalCsp != X265_CSP_I420 || p->internalBitDepth != 10 || p->vui.colorPrimaries != 9 ||

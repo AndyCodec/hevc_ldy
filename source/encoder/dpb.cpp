@@ -123,6 +123,11 @@ void DPB::recycleUnreferenced()
     }
 }
 
+void DPB::recycleLookahead(Frame *newFrame)
+{
+    m_freeList.pushBack(*newFrame);
+}
+
 void DPB::prepareEncode(Frame *newFrame)
 {
     Slice* slice = newFrame->m_encData->m_slice;

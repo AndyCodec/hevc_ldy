@@ -61,6 +61,7 @@ public:
     ~DPB();
 
     void prepareEncode(Frame*);
+    void recycleLookahead(Frame*);
 
     void recycleUnreferenced();
 
